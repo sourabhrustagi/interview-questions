@@ -1,0 +1,317 @@
+/* ==========================================
+   TechPrep Matrix - Supplemental CSS
+   (Layout/color utilities now live in Tailwind classes
+   in index.html + js/app.js, driven by css/theme.css
+   design tokens. This file only covers the pieces that
+   aren't practical as pure utility classes: the raw
+   answer-HTML typography, code blocks, the flashcard 3D
+   flip, the quiz shell, and glossary tooltips.)
+   ========================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ==========================================
+   Answer Content (raw HTML from js/data.js)
+   ========================================== */
+.answer-content {
+  color: rgb(var(--on-surface));
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.answer-content h4 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgb(var(--on-surface));
+  margin-top: 4px;
+}
+
+.answer-content p {
+  color: rgb(var(--on-surface-variant));
+}
+
+.answer-content ul, .answer-content ol {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: rgb(var(--on-surface-variant));
+}
+
+.answer-content strong {
+  color: rgb(var(--on-surface));
+}
+
+.answer-content code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  background: rgb(var(--surface-container-highest) / 0.6);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+/* A bare <pre><code> embedded directly in answer HTML (not wrapped in
+   .code-block) — same dark card treatment, no header/copy button. */
+.answer-content pre {
+  background: rgb(var(--surface-container-lowest));
+  border: 1px solid rgb(var(--outline-variant) / 0.4);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.answer-content pre code {
+  display: block;
+  padding: 14px 16px;
+  background: none;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+/* Code Snippets */
+.code-block {
+  position: relative;
+  background: rgb(var(--surface-container-lowest));
+  border: 1px solid rgb(var(--outline-variant) / 0.4);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgb(var(--surface-container-high) / 0.5);
+  border-bottom: 1px solid rgb(var(--outline-variant) / 0.4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgb(var(--on-surface-variant));
+}
+
+.copy-code-btn {
+  font-size: 12px;
+  color: rgb(var(--on-surface-variant));
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgb(var(--surface-container-high) / 0.7);
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.copy-code-btn:hover {
+  color: rgb(var(--on-primary));
+  background: rgb(var(--primary));
+}
+
+.code-block pre code {
+  display: block;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgb(var(--on-surface));
+  background: none;
+  overflow-x: auto;
+}
+
+/* Key Takeaways Box */
+.takeaways-box {
+  background: rgb(var(--secondary) / 0.08);
+  border-left: 4px solid rgb(var(--secondary));
+  padding: 14px 18px;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.takeaways-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(var(--secondary));
+  margin-bottom: 6px;
+}
+
+.takeaways-box ul {
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: rgb(var(--on-surface-variant));
+}
+
+.answer-followup {
+  font-size: 13px;
+  color: rgb(var(--on-surface-variant));
+  font-style: italic;
+}
+
+/* ==========================================
+   Flashcard Mode View
+   ========================================== */
+.flashcard-view {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 800px;
+  margin: 20px auto;
+  width: 100%;
+}
+
+.flashcard-view.active {
+  display: flex;
+}
+
+.flashcard-wrapper {
+  perspective: 1000px;
+  width: 100%;
+  height: 420px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-wrapper.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front, .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(var(--outline-variant) / 0.5);
+  background: rgb(var(--surface-container) / 0.85);
+  backdrop-filter: blur(16px);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+  text-align: left;
+  overflow-y: auto;
+}
+
+.card-hint {
+  font-size: 12px;
+  color: rgb(var(--on-surface-variant));
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.flashcard-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ==========================================
+   Quiz / Practice Mode View
+   ========================================== */
+.quiz-view {
+  display: none;
+  background: rgb(var(--surface-container) / 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgb(var(--outline-variant) / 0.4);
+  border-radius: 0.75rem;
+  padding: 32px;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.quiz-view.active {
+  display: flex;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.answer-container {
+  animation: fadeIn 0.25s ease;
+}
+
+/* Glossary Terms - clickable/tappable jargon with beginner explanations */
+.glossary-term {
+  border-bottom: 1px dashed rgb(var(--primary));
+  color: rgb(var(--primary));
+  font-weight: 600;
+  cursor: help;
+  padding: 0 1px;
+  border-radius: 3px;
+}
+
+.glossary-term:hover,
+.glossary-term:focus {
+  background: rgb(var(--primary) / 0.15);
+  outline: none;
+}
+
+.glossary-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border-radius: 0.5rem;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: rgb(var(--on-surface));
+  background: rgb(var(--surface-container-high));
+  border: 1px solid rgb(var(--outline-variant) / 0.6);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.glossary-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .flashcard-wrapper {
+    height: 480px;
+  }
+}

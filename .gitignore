@@ -1,0 +1,5 @@
+# Local-only backup taken before the Tailwind redesign — not needed in the repo
+backup_pre_redesign/
+
+# OS cruft
+.DS_Store

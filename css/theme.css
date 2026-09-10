@@ -1,0 +1,106 @@
+/* ===========================================================
+   TechPrep Matrix — Design Tokens (Material Design 3 inspired)
+   Values are "R G B" triples so Tailwind's opacity modifiers
+   (e.g. bg-primary/20) work via rgb(var(--x) / <alpha-value>).
+   Dark is the default; .light-theme on <body> overrides it.
+   =========================================================== */
+
+:root {
+  --background: 11 19 38;
+  --error: 255 180 171;
+  --error-container: 147 0 10;
+  --inverse-on-surface: 40 48 68;
+  --inverse-primary: 73 75 214;
+  --inverse-surface: 218 226 253;
+  --on-background: 218 226 253;
+  --on-error: 105 0 5;
+  --on-error-container: 255 218 214;
+  --on-primary: 16 0 169;
+  --on-primary-container: 13 0 150;
+  --on-primary-fixed: 7 0 108;
+  --on-primary-fixed-variant: 47 46 190;
+  --on-secondary: 0 54 64;
+  --on-secondary-container: 0 66 78;
+  --on-secondary-fixed: 0 31 38;
+  --on-secondary-fixed-variant: 0 78 92;
+  --on-surface: 218 226 253;
+  --on-surface-variant: 199 196 215;
+  --on-tertiary: 71 42 0;
+  --on-tertiary-container: 62 36 0;
+  --on-tertiary-fixed: 42 23 0;
+  --on-tertiary-fixed-variant: 101 62 0;
+  --outline: 144 143 160;
+  --outline-variant: 70 69 84;
+  --primary: 192 193 255;
+  --primary-container: 128 131 255;
+  --primary-fixed: 225 224 255;
+  --primary-fixed-dim: 192 193 255;
+  --secondary: 76 215 246;
+  --secondary-container: 3 181 211;
+  --secondary-fixed: 172 237 255;
+  --secondary-fixed-dim: 76 215 246;
+  --surface: 11 19 38;
+  --surface-bright: 49 57 77;
+  --surface-container: 23 31 51;
+  --surface-container-high: 34 42 61;
+  --surface-container-highest: 45 52 73;
+  --surface-container-low: 19 27 46;
+  --surface-container-lowest: 6 14 32;
+  --surface-dim: 11 19 38;
+  --surface-tint: 192 193 255;
+  --surface-variant: 45 52 73;
+  --tertiary: 255 185 95;
+  --tertiary-container: 202 129 0;
+  --tertiary-fixed: 255 221 184;
+  --tertiary-fixed-dim: 255 185 95;
+}
+
+body.light-theme {
+  --background: 247 248 252;
+  --error: 186 26 26;
+  --error-container: 255 218 214;
+  --inverse-on-surface: 241 240 250;
+  --inverse-primary: 192 193 255;
+  --inverse-surface: 47 48 64;
+  --on-background: 26 28 42;
+  --on-error: 255 255 255;
+  --on-error-container: 147 0 10;
+  --on-primary: 255 255 255;
+  --on-primary-container: 13 0 150;
+  --on-primary-fixed: 7 0 108;
+  --on-primary-fixed-variant: 47 46 190;
+  --on-secondary: 255 255 255;
+  --on-secondary-container: 0 66 78;
+  --on-secondary-fixed: 0 31 38;
+  --on-secondary-fixed-variant: 0 78 92;
+  --on-surface: 26 28 42;
+  --on-surface-variant: 70 70 79;
+  --on-tertiary: 255 255 255;
+  --on-tertiary-container: 62 36 0;
+  --on-tertiary-fixed: 42 23 0;
+  --on-tertiary-fixed-variant: 101 62 0;
+  --outline: 118 118 128;
+  --outline-variant: 198 197 208;
+  --primary: 73 75 214;
+  --primary-container: 225 224 255;
+  --primary-fixed: 225 224 255;
+  --primary-fixed-dim: 192 193 255;
+  --secondary: 0 122 143;
+  --secondary-container: 182 235 245;
+  --secondary-fixed: 172 237 255;
+  --secondary-fixed-dim: 76 215 246;
+  --surface: 247 248 252;
+  --surface-bright: 247 248 252;
+  --surface-container: 235 236 246;
+  --surface-container-high: 229 230 241;
+  --surface-container-highest: 223 224 235;
+  --surface-container-low: 241 242 250;
+  --surface-container-lowest: 255 255 255;
+  --surface-dim: 216 218 228;
+  --surface-tint: 73 75 214;
+  --surface-variant: 226 225 236;
+  --tertiary: 161 91 0;
+  --tertiary-container: 255 221 184;
+  --tertiary-fixed: 255 221 184;
+  --tertiary-fixed-dim: 255 185 95;
+}
