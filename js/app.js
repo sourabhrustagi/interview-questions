@@ -94,6 +94,25 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTelemetry();
     setupEventListeners();
     setupGlossaryTooltips();
+    showBuildInfo();
+  }
+
+  // "Last updated" date in the footer — build-info.json is regenerated
+  // from the latest commit date by the GitHub Pages deploy workflow.
+  function showBuildInfo() {
+    const el = document.getElementById("last-updated");
+    if (!el) return;
+    fetch("build-info.json", { cache: "no-store" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(info => {
+        if (info && info.lastUpdated) {
+          el.textContent = info.lastUpdated;
+          if (info.commit && info.commit !== "local") {
+            el.title = `commit ${info.commit} · ${QUESTION_DATA.length} questions`;
+          }
+        }
+      })
+      .catch(() => { /* offline / missing — leave the placeholder */ });
   }
 
   function applyTheme(theme) {

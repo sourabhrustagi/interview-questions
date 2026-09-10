@@ -26,6 +26,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need history for the commit date
+
+      - name: Stamp build info
+        run: |
+          printf '{ "lastUpdated": "%s", "commit": "%s" }\n' \
+            "$(git log -1 --format=%cd --date=short)" \
+            "$(git rev-parse --short HEAD)" > build-info.json
+          cat build-info.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
