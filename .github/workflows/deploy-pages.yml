@@ -32,7 +32,7 @@ jobs:
       - name: Stamp build info
         run: |
           printf '{ "lastUpdated": "%s", "commit": "%s" }\n' \
-            "$(git log -1 --format=%cd --date=short)" \
+            "$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M UTC')" \
             "$(git rev-parse --short HEAD)" > build-info.json
           cat build-info.json
 
