@@ -67,6 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "dsa", name: "DSA", icon: "🧮", topics: "Arrays, Strings, Linked Lists, Trees, DP", iconBg: "bg-secondary-fixed/20", border: "border-secondary-fixed", fill: "bg-secondary-fixed" },
     { id: "flutter", name: "Flutter", icon: "💙", topics: "Dart, Riverpod, BLoC, RenderObjects", iconBg: "bg-secondary-fixed/15", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" },
     { id: "swiftui", name: "SwiftUI", icon: "🍊", topics: "Swift, @StateObject, Actors, Combine", iconBg: "bg-tertiary/15", border: "border-tertiary", fill: "bg-tertiary" },
+    { id: "react-native", name: "React Native", icon: "⚛️", topics: "JSI, Fabric, TurboModules, Hermes, Reanimated", iconBg: "bg-secondary-fixed/15", border: "border-secondary-fixed", fill: "bg-secondary-fixed" },
+    { id: "ai-eng", name: "AI Engineering", icon: "🧠", topics: "LLMs, RAG, Embeddings, Agents, Evals", iconBg: "bg-tertiary-container/25", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
     { id: "project-management", name: "Project Mgmt", icon: "📊", topics: "Agile, Scrum, Scope Creep, Metrics", iconBg: "bg-primary-container/20", border: "border-primary-container", fill: "bg-primary-container" },
     { id: "product-management", name: "Product Mgmt", icon: "🎯", topics: "RICE, PRD, Retention, Strategy", iconBg: "bg-tertiary-container/30", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
     { id: "spring-boot", name: "Spring Boot", icon: "🍃", topics: "Java, IoC/DI, Security, JPA, Microservices", iconBg: "bg-secondary-container/20", border: "border-secondary-container", fill: "bg-secondary-container" },
