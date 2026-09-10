@@ -270,6 +270,13 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="mt-3">
             <h3 class="font-headline-sm text-headline-sm text-on-surface leading-snug">${q.title}</h3>
             <p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-5xl leading-relaxed">${q.question}</p>
+            ${(q.tags && q.tags.length) ? `
+              <div class="flex flex-wrap items-center gap-1.5 mt-3">
+                ${[...new Set(q.tags)].filter(t => t && t !== q.topic).map(t => `
+                  <button class="px-2 py-0.5 rounded-full bg-surface-container-high/60 hover:bg-primary-container/30 text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors" data-action="search-tag" data-tag="${escapeHtml(t)}" type="button">#${escapeHtml(t)}</button>
+                `).join('')}
+              </div>
+            ` : ''}
           </div>
 
           <div class="mt-4">
@@ -406,6 +413,15 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.innerHTML = `✅ Copied!`;
             setTimeout(() => { btn.innerHTML = original; }, 2000);
           });
+        } else if (action === "search-tag") {
+          const tag = btn.dataset.tag;
+          state.searchQuery = tag;
+          state.page = 1;
+          if (searchInput) searchInput.value = tag;
+          if (searchInputHeader) searchInputHeader.value = tag;
+          renderQuestions();
+          if (state.mode === 'flashcards') setupFlashcards();
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }
       });
     });
