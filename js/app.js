@@ -23,7 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Quiz State
     quizQuestions: [],
     quizIndex: 0,
-    quizScore: 0,
+    quizResults: [],
+    quizRevealed: false,
     quizTimer: null,
     quizSeconds: 0
   };
@@ -609,6 +610,249 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
+  // Quiz Mode — timed self-assessment over the currently-filtered content
+  // ==========================================
+  function stopQuizTimer() {
+    if (state.quizTimer) {
+      clearInterval(state.quizTimer);
+      state.quizTimer = null;
+    }
+  }
+
+  function formatDuration(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  // Config screen: pick how many questions; the pool is whatever the
+  // current category / difficulty / status / search filters select.
+  function setupQuiz() {
+    stopQuizTimer();
+    const pool = getFilteredQuestions();
+    state.quizPoolSize = pool.length;
+
+    if (pool.length === 0) {
+      quizView.innerHTML = `
+        <div class="text-center py-12 text-on-surface-variant">
+          <h3 class="font-headline-sm text-headline-sm text-on-surface">No questions match the current filters</h3>
+          <p class="font-body-sm text-body-sm mt-1">Adjust the category, difficulty or search to build a quiz.</p>
+        </div>`;
+      return;
+    }
+
+    const cat = CATEGORIES.find(c => c.id === state.selectedCategory);
+    const scopeLabel = cat && cat.id !== "all" ? cat.name : "All domains";
+    const diffLabel = state.difficultyFilter === "all" ? "" : ` · ${state.difficultyFilter}`;
+    const options = [5, 10, 20, 30].filter(n => n <= pool.length);
+    if (!options.includes(pool.length) && pool.length < 30) options.push(pool.length);
+
+    quizView.innerHTML = `
+      <div class="w-full max-w-xl mx-auto text-center flex flex-col gap-space-md">
+        <span class="material-symbols-outlined text-5xl text-primary mx-auto">quiz</span>
+        <h2 class="font-headline-lg text-headline-lg text-on-surface">Self-Test Quiz</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          Answer from memory, reveal the model answer, and grade yourself.
+          Pool: <strong class="text-on-surface">${pool.length}</strong> questions from
+          <strong class="text-on-surface">${escapeHtml(scopeLabel)}${escapeHtml(diffLabel)}</strong>
+          ${state.statusFilter !== "all" ? ` · ${state.statusFilter}` : ""}
+          ${state.searchQuery.trim() ? ` · matching "${escapeHtml(state.searchQuery.trim())}"` : ""}.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
+          ${options.map(n => `
+            <button class="px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-primary-container/30 hover:text-primary font-label-md text-label-md transition-colors" data-quiz-count="${n}" type="button">${n} questions</button>
+          `).join("")}
+        </div>
+        <p class="font-label-sm text-label-sm text-outline mt-1">Questions are drawn at random and shuffled each time.</p>
+      </div>`;
+
+    quizView.querySelectorAll("[data-quiz-count]").forEach(btn => {
+      btn.addEventListener("click", () => startQuiz(parseInt(btn.dataset.quizCount, 10)));
+    });
+  }
+
+  function startQuiz(count) {
+    const pool = getFilteredQuestions().slice();
+    // Fisher–Yates shuffle, then take the first `count`
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    state.quizQuestions = pool.slice(0, count);
+    state.quizIndex = 0;
+    state.quizResults = [];   // { id, correct }
+    state.quizRevealed = false;
+    state.quizSeconds = 0;
+
+    stopQuizTimer();
+    state.quizTimer = setInterval(() => {
+      state.quizSeconds++;
+      const t = document.getElementById("quiz-timer");
+      if (t) t.textContent = formatDuration(state.quizSeconds);
+    }, 1000);
+
+    renderQuizQuestion();
+  }
+
+  function renderQuizQuestion() {
+    const q = state.quizQuestions[state.quizIndex];
+    const n = state.quizQuestions.length;
+    const diffClasses = DIFF_BADGE_CLASSES[q.difficulty] || "bg-surface-container-highest text-on-surface-variant";
+
+    quizView.innerHTML = `
+      <div class="w-full flex flex-col gap-space-md">
+        <div class="flex items-center justify-between gap-space-sm">
+          <div class="flex items-center gap-2">
+            <span class="font-label-md text-label-md text-on-surface-variant">Question ${state.quizIndex + 1} / ${n}</span>
+            <span class="font-label-md text-label-md text-secondary">Score ${state.quizResults.filter(r => r.correct).length}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-base text-tertiary">timer</span>
+            <span class="font-label-md text-label-md text-tertiary font-semibold" id="quiz-timer">${formatDuration(state.quizSeconds)}</span>
+          </div>
+        </div>
+
+        <div class="h-1.5 w-full rounded-full bg-surface-container-high overflow-hidden">
+          <div class="h-full bg-primary transition-all duration-300" style="width: ${Math.round((state.quizIndex / n) * 100)}%"></div>
+        </div>
+
+        <div class="p-space-lg rounded-xl bg-surface-container/75 border border-surface-container-high/30">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold uppercase">${q.categoryName}</span>
+            <span class="px-2.5 py-1 rounded-md ${diffClasses} font-label-sm text-label-sm font-semibold uppercase">${q.difficulty}</span>
+            <span class="px-2.5 py-1 rounded-md bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm uppercase">${q.topic}</span>
+          </div>
+          <h3 class="font-headline-sm text-headline-sm text-on-surface leading-snug mt-3">${q.title}</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed">${q.question}</p>
+
+          <div class="${state.quizRevealed ? "" : "hidden"} mt-space-md p-space-md rounded-lg bg-surface-container-lowest/90 answer-content" id="quiz-answer">
+            ${state.quizRevealed ? linkifyGlossary(q.answer, q.glossary) : ""}
+            ${state.quizRevealed && q.code ? `
+              <div class="code-block">
+                <div class="code-header"><span>${(q.codeLanguage || "code").toUpperCase()}</span></div>
+                <pre><code>${escapeHtml(q.code)}</code></pre>
+              </div>` : ""}
+          </div>
+
+          <div class="mt-4">
+            ${state.quizRevealed ? `
+              <p class="font-label-md text-label-md text-on-surface-variant mb-2">How did you do?</p>
+              <div class="flex flex-wrap gap-2">
+                <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-container/20 text-secondary hover:bg-secondary-container/30 font-label-md text-label-md font-semibold transition-colors" data-quiz-grade="1" type="button">
+                  <span class="material-symbols-outlined text-base">check_circle</span> Got it
+                </button>
+                <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-error-container/20 text-error hover:bg-error-container/30 font-label-md text-label-md font-semibold transition-colors" data-quiz-grade="0" type="button">
+                  <span class="material-symbols-outlined text-base">cancel</span> Missed it
+                </button>
+              </div>
+            ` : `
+              <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container/20 hover:bg-primary-container/30 text-primary font-label-md text-label-md font-semibold transition-colors" id="quiz-reveal" type="button">
+                <span class="material-symbols-outlined text-base">lightbulb</span> Reveal answer
+              </button>
+            `}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <button class="px-space-sm py-2 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high font-label-sm text-label-sm transition-colors" id="quiz-quit" type="button">End quiz</button>
+        </div>
+      </div>`;
+
+    document.getElementById("quiz-reveal")?.addEventListener("click", () => {
+      state.quizRevealed = true;
+      renderQuizQuestion();
+    });
+    quizView.querySelectorAll("[data-quiz-grade]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.quizResults.push({ id: q.id, correct: btn.dataset.quizGrade === "1" });
+        state.quizRevealed = false;
+        if (state.quizIndex < state.quizQuestions.length - 1) {
+          state.quizIndex++;
+          renderQuizQuestion();
+        } else {
+          renderQuizResults();
+        }
+      });
+    });
+    document.getElementById("quiz-quit")?.addEventListener("click", () => {
+      if (state.quizResults.length > 0) renderQuizResults();
+      else setupQuiz();
+    });
+  }
+
+  function renderQuizResults() {
+    stopQuizTimer();
+    const results = state.quizResults;
+    const correct = results.filter(r => r.correct).length;
+    const total = results.length;
+    const pct = total ? Math.round((correct / total) * 100) : 0;
+    const missed = results.filter(r => !r.correct)
+      .map(r => QUESTION_DATA.find(q => q.id === r.id))
+      .filter(Boolean);
+    const gotIds = results.filter(r => r.correct).map(r => r.id);
+
+    quizView.innerHTML = `
+      <div class="w-full max-w-2xl mx-auto flex flex-col gap-space-md">
+        <div class="text-center flex flex-col gap-2">
+          <span class="material-symbols-outlined text-5xl ${pct >= 70 ? "text-secondary" : pct >= 40 ? "text-tertiary" : "text-error"} mx-auto">
+            ${pct >= 70 ? "military_tech" : "insights"}
+          </span>
+          <h2 class="font-headline-lg text-headline-lg text-on-surface">${correct} / ${total} &nbsp;·&nbsp; ${pct}%</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">Completed in ${formatDuration(state.quizSeconds)}${total ? ` &nbsp;·&nbsp; ~${formatDuration(Math.round(state.quizSeconds / total))} per question` : ""}.</p>
+        </div>
+
+        ${gotIds.length ? `
+          <button class="mx-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-container/20 text-secondary hover:bg-secondary-container/30 font-label-md text-label-md font-semibold transition-colors" id="quiz-mark-mastered" type="button">
+            <span class="material-symbols-outlined text-base">check</span> Mark my ${gotIds.length} correct as mastered
+          </button>
+        ` : ""}
+
+        ${missed.length ? `
+          <div class="mt-2">
+            <h3 class="font-label-md text-label-md text-error font-semibold uppercase tracking-wider mb-2">Review these (${missed.length})</h3>
+            <div class="flex flex-col gap-2">
+              ${missed.map(q => `
+                <button class="text-left p-3 rounded-lg bg-surface-container/75 border border-surface-container-high/30 hover:border-primary-container/50 transition-colors" data-quiz-review="${q.id}" type="button">
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">${q.categoryName} · ${q.topic}</span>
+                  <p class="font-body-md text-body-md text-on-surface mt-0.5">${q.title}</p>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        ` : `<p class="text-center font-body-md text-body-md text-secondary">Clean sweep — nothing to review.</p>`}
+
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
+          <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary hover:opacity-90 font-label-md text-label-md font-semibold transition-opacity" id="quiz-again" type="button">
+            <span class="material-symbols-outlined text-base">refresh</span> New quiz
+          </button>
+          <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-md text-label-md transition-colors" id="quiz-to-explore" type="button">
+            Back to Explore
+          </button>
+        </div>
+      </div>`;
+
+    document.getElementById("quiz-again")?.addEventListener("click", setupQuiz);
+    document.getElementById("quiz-to-explore")?.addEventListener("click", () => {
+      const exploreBtn = [...navBtns].find(b => b.dataset.mode === "explore");
+      if (exploreBtn) exploreBtn.click();
+    });
+    document.getElementById("quiz-mark-mastered")?.addEventListener("click", (e) => {
+      gotIds.forEach(id => { if (!state.mastered.includes(id)) state.mastered.push(id); });
+      localStorage.setItem("techprep_mastered", JSON.stringify(state.mastered));
+      renderCategoryGrid();
+      updateTelemetry();
+      e.currentTarget.disabled = true;
+      e.currentTarget.innerHTML = `<span class="material-symbols-outlined text-base">done_all</span> Marked ${gotIds.length} as mastered`;
+    });
+    quizView.querySelectorAll("[data-quiz-review]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const q = QUESTION_DATA.find(x => x.id === btn.dataset.quizReview);
+        if (q) jumpToQuestion(q);
+      });
+    });
+  }
+
+  // ==========================================
   // Event Listeners Setup
   // ==========================================
   function setupEventListeners() {
@@ -660,7 +904,9 @@ document.addEventListener("DOMContentLoaded", () => {
         flashcardView.classList.toggle("active", state.mode === "flashcards");
         quizView.classList.toggle("active", state.mode === "quiz");
 
+        if (state.mode !== "quiz") stopQuizTimer();
         if (state.mode === "flashcards") setupFlashcards();
+        if (state.mode === "quiz") setupQuiz();
       });
     });
 
@@ -692,6 +938,15 @@ document.addEventListener("DOMContentLoaded", () => {
           document.getElementById("fc-next")?.click();
         } else if (e.code === "ArrowLeft") {
           document.getElementById("fc-prev")?.click();
+        }
+      } else if (state.mode === "quiz") {
+        if (e.code === "Space") {
+          e.preventDefault();
+          document.getElementById("quiz-reveal")?.click();
+        } else if (e.key === "1") {
+          quizView.querySelector('[data-quiz-grade="1"]')?.click();
+        } else if (e.key === "2") {
+          quizView.querySelector('[data-quiz-grade="0"]')?.click();
         }
       }
     });
