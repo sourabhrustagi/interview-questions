@@ -18,9 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Quiz State
     quizQuestions: [],
+    quizOptions: [],
     quizIndex: 0,
     quizResults: [],
-    quizRevealed: false,
+    quizSelected: null,
     quizTimer: null,
     quizSeconds: 0
   };
@@ -52,6 +53,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const dailyDrillBtn = document.getElementById("daily-drill-btn");
   const dailyDrillBtnTop = document.getElementById("daily-drill-btn-top");
   const resumeBtn = document.getElementById("resume-btn");
+  const exportProgressBtn = document.getElementById("export-progress-btn");
+  const importProgressBtn = document.getElementById("import-progress-btn");
+  const importProgressInput = document.getElementById("import-progress-input");
 
   // Category Configuration - each domain carries its own Tailwind accent
   // tokens (icon background, left-border accent, progress-fill color).
@@ -543,6 +547,44 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
+  // Short plain-text excerpt of a question's answer — used as the
+  // "option text" for MCQ generation below, and nowhere else.
+  function getAnswerSnippet(q, maxLen = 150) {
+    const container = document.createElement("div");
+    container.innerHTML = q.answer;
+    const text = (container.textContent || "").replace(/\s+/g, " ").trim();
+    if (!text) return q.title;
+    const sentenceMatch = text.match(/^.*?[.!?](?=\s|$)/);
+    let snippet = sentenceMatch ? sentenceMatch[0] : text;
+    if (snippet.length > maxLen) snippet = snippet.slice(0, maxLen).trim() + "…";
+    return snippet;
+  }
+
+  // Build 4 MCQ options for `q`: the real opening of its own answer as
+  // the correct choice, plus 3 distractors drawn from other questions'
+  // real answers (preferring the same category, so wrong options are
+  // topically plausible rather than trivially off-topic). No new
+  // authoring needed — generated purely from QUESTION_DATA.
+  function buildMcqOptions(q) {
+    const sameCategory = QUESTION_DATA.filter(x => x.id !== q.id && x.category === q.category);
+    const rest = QUESTION_DATA.filter(x => x.id !== q.id && x.category !== q.category);
+    const shuffle = arr => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    const distractorSource = [...shuffle(sameCategory), ...shuffle(rest)].slice(0, 3);
+
+    const options = [
+      { text: getAnswerSnippet(q), correct: true },
+      ...distractorSource.map(x => ({ text: getAnswerSnippet(x), correct: false }))
+    ];
+    return shuffle(options);
+  }
+
   // Config screen: pick how many questions; the pool is whatever the
   // current category / difficulty / status / search filters select.
   function setupQuiz() {
@@ -568,9 +610,9 @@ document.addEventListener("DOMContentLoaded", () => {
     quizView.innerHTML = `
       <div class="w-full max-w-xl mx-auto text-center flex flex-col gap-space-md">
         <span class="material-symbols-outlined text-5xl text-primary mx-auto">quiz</span>
-        <h2 class="font-headline-lg text-headline-lg text-on-surface">Self-Test Quiz</h2>
+        <h2 class="font-headline-lg text-headline-lg text-on-surface">Multiple-Choice Quiz</h2>
         <p class="font-body-md text-body-md text-on-surface-variant">
-          Answer from memory, reveal the model answer, and grade yourself.
+          Pick the right answer, get graded instantly, then see the full explanation.
           Pool: <strong class="text-on-surface">${pool.length}</strong> questions from
           <strong class="text-on-surface">${escapeHtml(scopeLabel)}${escapeHtml(diffLabel)}</strong>
           ${state.statusFilter !== "all" ? ` · ${state.statusFilter}` : ""}
@@ -597,9 +639,10 @@ document.addEventListener("DOMContentLoaded", () => {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     state.quizQuestions = pool.slice(0, count);
+    state.quizOptions = state.quizQuestions.map(buildMcqOptions);
     state.quizIndex = 0;
     state.quizResults = [];   // { id, correct }
-    state.quizRevealed = false;
+    state.quizSelected = null; // index into quizOptions[quizIndex] once answered
     state.quizSeconds = 0;
 
     stopQuizTimer();
@@ -614,8 +657,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderQuizQuestion() {
     const q = state.quizQuestions[state.quizIndex];
+    const options = state.quizOptions[state.quizIndex];
     const n = state.quizQuestions.length;
     const diffClasses = DIFF_BADGE_CLASSES[q.difficulty] || "bg-surface-container-highest text-on-surface-variant";
+    const answered = state.quizSelected !== null;
+    const letters = ["A", "B", "C", "D"];
 
     quizView.innerHTML = `
       <div class="w-full flex flex-col gap-space-md">
@@ -643,32 +689,40 @@ document.addEventListener("DOMContentLoaded", () => {
           <h3 class="font-headline-sm text-headline-sm text-on-surface leading-snug mt-3">${q.title}</h3>
           <p class="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed">${q.question}</p>
 
-          <div class="${state.quizRevealed ? "" : "hidden"} mt-space-md p-space-md rounded-lg bg-surface-container-lowest/90 answer-content" id="quiz-answer">
-            ${state.quizRevealed ? linkifyGlossary(q.answer, q.glossary) : ""}
-            ${state.quizRevealed && q.code ? `
-              <div class="code-block">
-                <div class="code-header"><span>${(q.codeLanguage || "code").toUpperCase()}</span></div>
-                <pre><code>${escapeHtml(q.code)}</code></pre>
-              </div>` : ""}
+          <div class="flex flex-col gap-2 mt-space-md">
+            ${options.map((opt, i) => {
+              let cls = "bg-surface-container-low hover:bg-surface-container-high text-on-surface";
+              if (answered) {
+                if (opt.correct) cls = "bg-secondary-container/25 text-secondary ring-1 ring-secondary";
+                else if (i === state.quizSelected) cls = "bg-error-container/25 text-error ring-1 ring-error";
+                else cls = "bg-surface-container-low text-on-surface-variant opacity-60";
+              }
+              return `
+                <button class="text-left flex items-start gap-3 px-4 py-3 rounded-lg font-body-md text-body-md leading-relaxed transition-colors ${cls}" data-quiz-option="${i}" type="button" ${answered ? "disabled" : ""}>
+                  <span class="font-label-md text-label-md font-bold flex-shrink-0">${letters[i]}</span>
+                  <span>${escapeHtml(opt.text)}</span>
+                  ${answered && opt.correct ? '<span class="material-symbols-outlined text-base ml-auto flex-shrink-0">check_circle</span>' : ""}
+                  ${answered && !opt.correct && i === state.quizSelected ? '<span class="material-symbols-outlined text-base ml-auto flex-shrink-0">cancel</span>' : ""}
+                </button>`;
+            }).join("")}
           </div>
 
-          <div class="mt-4">
-            ${state.quizRevealed ? `
-              <p class="font-label-md text-label-md text-on-surface-variant mb-2">How did you do?</p>
-              <div class="flex flex-wrap gap-2">
-                <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-container/20 text-secondary hover:bg-secondary-container/30 font-label-md text-label-md font-semibold transition-colors" data-quiz-grade="1" type="button">
-                  <span class="material-symbols-outlined text-base">check_circle</span> Got it
-                </button>
-                <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-error-container/20 text-error hover:bg-error-container/30 font-label-md text-label-md font-semibold transition-colors" data-quiz-grade="0" type="button">
-                  <span class="material-symbols-outlined text-base">cancel</span> Missed it
-                </button>
-              </div>
-            ` : `
-              <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container/20 hover:bg-primary-container/30 text-primary font-label-md text-label-md font-semibold transition-colors" id="quiz-reveal" type="button">
-                <span class="material-symbols-outlined text-base">lightbulb</span> Reveal answer
+          ${answered ? `
+            <div class="mt-space-md p-space-md rounded-lg bg-surface-container-lowest/90 answer-content">
+              ${linkifyGlossary(q.answer, q.glossary)}
+              ${q.code ? `
+                <div class="code-block">
+                  <div class="code-header"><span>${(q.codeLanguage || "code").toUpperCase()}</span></div>
+                  <pre><code>${escapeHtml(q.code)}</code></pre>
+                </div>` : ""}
+            </div>
+            <div class="mt-4">
+              <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary hover:opacity-90 font-label-md text-label-md font-semibold transition-opacity" id="quiz-next" type="button">
+                ${state.quizIndex < n - 1 ? "Next question" : "See results"}
+                <span class="material-symbols-outlined text-base">arrow_forward</span>
               </button>
-            `}
-          </div>
+            </div>
+          ` : ""}
         </div>
 
         <div class="flex items-center justify-between">
@@ -676,21 +730,24 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>`;
 
-    document.getElementById("quiz-reveal")?.addEventListener("click", () => {
-      state.quizRevealed = true;
-      renderQuizQuestion();
-    });
-    quizView.querySelectorAll("[data-quiz-grade]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        state.quizResults.push({ id: q.id, correct: btn.dataset.quizGrade === "1" });
-        state.quizRevealed = false;
-        if (state.quizIndex < state.quizQuestions.length - 1) {
-          state.quizIndex++;
+    if (!answered) {
+      quizView.querySelectorAll("[data-quiz-option]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const i = parseInt(btn.dataset.quizOption, 10);
+          state.quizSelected = i;
+          state.quizResults.push({ id: q.id, correct: !!options[i].correct });
           renderQuizQuestion();
-        } else {
-          renderQuizResults();
-        }
+        });
       });
+    }
+    document.getElementById("quiz-next")?.addEventListener("click", () => {
+      state.quizSelected = null;
+      if (state.quizIndex < state.quizQuestions.length - 1) {
+        state.quizIndex++;
+        renderQuizQuestion();
+      } else {
+        renderQuizResults();
+      }
     });
     document.getElementById("quiz-quit")?.addEventListener("click", () => {
       if (state.quizResults.length > 0) renderQuizResults();
@@ -832,22 +889,28 @@ document.addEventListener("DOMContentLoaded", () => {
     // Export Study Plan (Markdown Download)
     exportBtn?.addEventListener("click", exportQuestionsToMarkdown);
 
+    // Progress Backup/Restore (local .json file — no account, no database)
+    exportProgressBtn?.addEventListener("click", exportProgressToJson);
+    importProgressBtn?.addEventListener("click", () => importProgressInput?.click());
+    importProgressInput?.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) importProgressFromJson(file);
+      e.target.value = "";
+    });
+
     // Daily Drill / Resume
     dailyDrillBtn?.addEventListener("click", pickDailyDrill);
     dailyDrillBtnTop?.addEventListener("click", pickDailyDrill);
     resumeBtn?.addEventListener("click", pickResumeQuestion);
 
-    // Keyboard Shortcuts for Quiz Mode
+    // Keyboard Shortcuts for Quiz Mode: 1-4 pick an option, Space/Enter advances
     document.addEventListener("keydown", (e) => {
-      if (state.mode === "quiz") {
-        if (e.code === "Space") {
-          e.preventDefault();
-          document.getElementById("quiz-reveal")?.click();
-        } else if (e.key === "1") {
-          quizView.querySelector('[data-quiz-grade="1"]')?.click();
-        } else if (e.key === "2") {
-          quizView.querySelector('[data-quiz-grade="0"]')?.click();
-        }
+      if (state.mode !== "quiz") return;
+      if (["1", "2", "3", "4"].includes(e.key)) {
+        quizView.querySelector(`[data-quiz-option="${Number(e.key) - 1}"]`)?.click();
+      } else if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+        document.getElementById("quiz-next")?.click();
       }
     });
   }
@@ -877,6 +940,62 @@ document.addEventListener("DOMContentLoaded", () => {
     a.download = `TechPrep_Interview_Questions.md`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // ==========================================
+  // Progress Backup/Restore
+  // No account, no backend, no database — bookmarks/mastered/streak/theme
+  // just live in this browser's localStorage. These two functions are the
+  // only way to get that state into a portable file: a plain .json
+  // download the user can keep, move to another browser/device, or
+  // restore from later.
+  // ==========================================
+  const PROGRESS_KEYS = ["techprep_bookmarks", "techprep_mastered", "techprep_streak", "techprep_theme"];
+
+  function exportProgressToJson() {
+    const data = { exportedAt: new Date().toISOString(), version: 1 };
+    PROGRESS_KEYS.forEach(key => {
+      const raw = localStorage.getItem(key);
+      if (raw === null) return;
+      try { data[key] = JSON.parse(raw); } catch { data[key] = raw; }
+    });
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `techprep-progress-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importProgressFromJson(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch {
+        alert("That doesn't look like a valid progress backup file.");
+        return;
+      }
+
+      PROGRESS_KEYS.forEach(key => {
+        if (!(key in data)) return;
+        const value = data[key];
+        localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+      });
+
+      state.bookmarks = JSON.parse(localStorage.getItem("techprep_bookmarks")) || [];
+      state.mastered = JSON.parse(localStorage.getItem("techprep_mastered")) || [];
+      applyTheme(localStorage.getItem("techprep_theme") || "dark");
+      updateStreak();
+      renderCategoryGrid();
+      renderQuestions();
+      updateTelemetry();
+      alert("Progress restored from backup.");
+    };
+    reader.readAsText(file);
   }
 
   // ==========================================

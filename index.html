@@ -192,6 +192,16 @@
               <button id="daily-drill-btn" class="px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-center text-label-sm transition-colors" type="button">Daily Drill</button>
               <button id="resume-btn" class="px-2.5 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container hover:opacity-90 font-label-sm text-center text-label-sm font-semibold transition-opacity" type="button">Resume</button>
             </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="export-progress-btn" class="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-bright font-label-sm text-label-sm transition-colors" type="button">
+                <span class="material-symbols-outlined text-sm">download</span> Backup
+              </button>
+              <button id="import-progress-btn" class="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-bright font-label-sm text-label-sm transition-colors" type="button">
+                <span class="material-symbols-outlined text-sm">upload</span> Restore
+              </button>
+              <input type="file" id="import-progress-input" accept="application/json" class="hidden">
+            </div>
+            <p class="font-label-sm text-[10px] text-outline leading-snug -mt-1">No account, no database — progress lives in this browser. Backup saves it to a .json file you can restore later or on another device.</p>
           </div>
         </aside>
 
@@ -283,8 +293,8 @@
         <span class="font-label-sm text-label-sm text-outline">Last updated <span id="last-updated">—</span></span>
       </div>
       <div class="flex items-center gap-space-lg font-label-sm text-label-sm">
-        <span class="text-on-surface-variant">Press <kbd class="bg-surface-container-high px-1.5 py-0.5 rounded">Space</kbd> in Quiz Mode to reveal</span>
-        <span class="text-on-surface-variant">Press <kbd class="bg-surface-container-high px-1.5 py-0.5 rounded">1</kbd> / <kbd class="bg-surface-container-high px-1.5 py-0.5 rounded">2</kbd> to grade yourself</span>
+        <span class="text-on-surface-variant">Press <kbd class="bg-surface-container-high px-1.5 py-0.5 rounded">1</kbd>–<kbd class="bg-surface-container-high px-1.5 py-0.5 rounded">4</kbd> in Quiz Mode to answer</span>
+        <span class="text-on-surface-variant">Press <kbd class="bg-surface-container-high px-1.5 py-0.5 rounded">Space</kbd> to continue</span>
       </div>
     </div>
   </footer>
@@ -319,6 +329,8 @@
   <script src="js/data-batch13.js?v=1"></script>
   <!-- Chief Manager JD gap fill: Cloud & DevOps (new), Distributed Systems, Engineering Leadership at Scale (batch 14) -->
   <script src="js/data-batch14.js?v=3"></script>
-  <script src="js/app.js?v=16"></script>
+  <!-- Chief Manager behavioral / team-handling questions (batch 15) -->
+  <script src="js/data-batch15.js?v=1"></script>
+  <script src="js/app.js?v=17"></script>
 </body>
 </html>
