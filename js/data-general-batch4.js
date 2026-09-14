@@ -777,8 +777,8 @@ QUESTION_DATA.push(
 },
 {
   "id": "gen-b4-50",
-  "category": "full-stack",
-  "categoryName": "Full Stack",
+  "category": "system-design",
+  "categoryName": "System Design",
   "topic": "System Design & Scalability",
   "title": "Design a URL shortener — walk through it.",
   "difficulty": "Senior",
@@ -792,8 +792,8 @@ QUESTION_DATA.push(
 },
 {
   "id": "gen-b4-51",
-  "category": "full-stack",
-  "categoryName": "Full Stack",
+  "category": "system-design",
+  "categoryName": "System Design",
   "topic": "System Design & Scalability",
   "title": "How do you scale a web app horizontally, and the sticky-session problem.",
   "difficulty": "Mid",
@@ -808,8 +808,8 @@ QUESTION_DATA.push(
 },
 {
   "id": "gen-b4-52",
-  "category": "full-stack",
-  "categoryName": "Full Stack",
+  "category": "system-design",
+  "categoryName": "System Design",
   "topic": "System Design & Scalability",
   "title": "Caching strategy — CDN vs Redis vs in-memory, and why invalidation is the hard part.",
   "difficulty": "Senior",
@@ -825,8 +825,8 @@ QUESTION_DATA.push(
 },
 {
   "id": "gen-b4-53",
-  "category": "full-stack",
-  "categoryName": "Full Stack",
+  "category": "system-design",
+  "categoryName": "System Design",
   "topic": "System Design & Scalability",
   "title": "Rate limiting — token bucket vs sliding window, and why it matters.",
   "difficulty": "Mid",

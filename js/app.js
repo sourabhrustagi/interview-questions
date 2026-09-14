@@ -50,6 +50,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const paginationBar = document.getElementById("pagination-bar");
   const paginationSummary = document.getElementById("pagination-summary");
   const paginationControls = document.getElementById("pagination-controls");
+  const paginationBarTop = document.getElementById("pagination-bar-top");
+  const paginationSummaryTop = document.getElementById("pagination-summary-top");
+  const paginationControlsTop = document.getElementById("pagination-controls-top");
+
+  const mobileTrackBar = document.getElementById("mobile-track-bar");
+  const mobileActiveTrackName = document.getElementById("mobile-active-track-name");
+  const mobileTrackDrawer = document.getElementById("mobile-track-drawer");
+  const mobileTrackDrawerBtn = document.getElementById("mobile-tracks-drawer-btn");
+  const mobileTrackDrawerCloseBtn = document.getElementById("mobile-track-drawer-close-btn");
+  const mobileTrackDrawerBackdrop = document.getElementById("mobile-track-drawer-backdrop");
+  const categoryGridMobile = document.getElementById("category-grid-mobile");
+  const mobileMasteryStreak = document.getElementById("mobile-mastery-streak");
+  const dailyDrillBtnMobile = document.getElementById("daily-drill-btn-mobile");
+  const resumeBtnMobile = document.getElementById("resume-btn-mobile");
+  const exportProgressBtnMobile = document.getElementById("export-progress-btn-mobile");
+  const importProgressBtnMobile = document.getElementById("import-progress-btn-mobile");
+
   const dailyDrillBtn = document.getElementById("daily-drill-btn");
   const dailyDrillBtnTop = document.getElementById("daily-drill-btn-top");
   const resumeBtn = document.getElementById("resume-btn");
@@ -74,7 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "product-management", name: "Product Mgmt", icon: "🎯", topics: "RICE, PRD, Retention, Strategy", iconBg: "bg-tertiary-container/30", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
     { id: "spring-boot", name: "Spring Boot", icon: "🍃", topics: "Java, IoC/DI, Security, JPA, Microservices", iconBg: "bg-secondary-container/20", border: "border-secondary-container", fill: "bg-secondary-container" },
     { id: "nodejs", name: "Node.js", icon: "🟢", topics: "Event Loop, libuv, Streams, Worker Threads", iconBg: "bg-primary/15", border: "border-primary", fill: "bg-primary" },
-    { id: "full-stack", name: "Full Stack", icon: "⚡", topics: "System Design, OWASP, Scalability, JWT", iconBg: "bg-tertiary-fixed/20", border: "border-tertiary-fixed", fill: "bg-tertiary-fixed" }
+    { id: "full-stack", name: "Full Stack", icon: "⚡", topics: "OWASP, JWT, Auth, APIs", iconBg: "bg-tertiary-fixed/20", border: "border-tertiary-fixed", fill: "bg-tertiary-fixed" },
+    { id: "system-design", name: "System Design", icon: "🗺️", topics: "Scaling, Consistent Hashing, Feeds, Queues, Storage", iconBg: "bg-secondary-fixed-dim/20", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" }
   ];
 
   const DIFF_BADGE_CLASSES = {
@@ -145,9 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
     state.streak = stored.count;
   }
 
-  // Render Category Selection Cards
+  // Render Category Selection Cards (Desktop Sidebar, Mobile Bar, and Mobile Drawer)
   function renderCategoryGrid() {
-    categoryGrid.innerHTML = CATEGORIES.map(cat => {
+    const cardsHtml = CATEGORIES.map(cat => {
       const count = cat.id === "all"
         ? QUESTION_DATA.length
         : QUESTION_DATA.filter(q => q.category === cat.id).length;
@@ -169,12 +187,12 @@ document.addEventListener("DOMContentLoaded", () => {
         : "bg-surface-container-highest text-on-surface-variant";
 
       return `
-        <div class="group relative flex items-center justify-between p-3 rounded-xl backdrop-blur-md transition-all duration-200 cursor-pointer ${cardClasses}" data-cat-id="${cat.id}">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg ${iconClasses} flex items-center justify-center text-lg flex-shrink-0">${cat.icon}</div>
+        <div class="group relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl backdrop-blur-md transition-all duration-200 cursor-pointer ${cardClasses}" data-cat-id="${cat.id}">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${iconClasses} flex items-center justify-center text-base sm:text-lg flex-shrink-0">${cat.icon}</div>
             <div class="min-w-0">
-              <h3 class="font-headline-sm text-[15px] font-semibold text-on-surface truncate">${cat.name}</h3>
-              <p class="font-body-sm text-[11px] text-on-surface-variant truncate">${cat.topics}</p>
+              <h3 class="font-headline-sm text-[13.5px] sm:text-[15px] font-semibold text-on-surface truncate">${cat.name}</h3>
+              <p class="font-body-sm text-[10.5px] sm:text-[11px] text-on-surface-variant truncate">${cat.topics}</p>
             </div>
           </div>
           <div class="flex flex-col items-end gap-1 flex-shrink-0 pl-2">
@@ -187,6 +205,25 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }).join('');
 
+    if (categoryGrid) categoryGrid.innerHTML = cardsHtml;
+    if (categoryGridMobile) categoryGridMobile.innerHTML = cardsHtml;
+
+    if (mobileTrackBar) {
+      mobileTrackBar.innerHTML = CATEGORIES.map(cat => {
+        const isSelected = state.selectedCategory === cat.id;
+        const count = cat.id === "all" ? QUESTION_DATA.length : QUESTION_DATA.filter(q => q.category === cat.id).length;
+        return `
+          <button class="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-sm text-xs transition-all ${isSelected ? 'bg-gradient-to-r from-primary to-inverse-primary text-on-primary font-semibold shadow-sm ring-1 ring-primary/50' : 'bg-surface-container-high/80 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright'}" data-cat-id="${cat.id}" type="button">
+            <span>${cat.icon}</span>
+            <span>${cat.name}</span>
+            <span class="text-[10px] opacity-80 font-mono">(${count})</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    const currentCat = CATEGORIES.find(c => c.id === state.selectedCategory) || CATEGORIES[0];
+    if (mobileActiveTrackName) mobileActiveTrackName.textContent = currentCat.name;
     if (trackCountBadge) trackCountBadge.textContent = `${CATEGORIES.length} Tracks`;
 
     document.querySelectorAll("[data-cat-id]").forEach(card => {
@@ -196,6 +233,9 @@ document.addEventListener("DOMContentLoaded", () => {
         renderCategoryGrid();
         renderQuestions();
         updateTelemetry();
+        mobileTrackDrawer?.classList.remove("open");
+        exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
   }
@@ -225,6 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (telemetryMastery) telemetryMastery.textContent = `${state.mastered.length}/${QUESTION_DATA.length}`;
     if (telemetryStreak) telemetryStreak.textContent = `${state.streak || 0} Days`;
     if (masteryStreakLabel) masteryStreakLabel.textContent = `${state.streak || 0} Day Streak`;
+    if (mobileMasteryStreak) mobileMasteryStreak.textContent = `${state.streak || 0} Day Streak`;
 
     const pct = QUESTION_DATA.length > 0 ? Math.round((state.mastered.length / QUESTION_DATA.length) * 100) : 0;
     if (masteryDonutFill) masteryDonutFill.setAttribute("stroke-dasharray", `${pct}, 100`);
@@ -343,12 +384,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!paginationSummary || !paginationControls) return;
 
     if (total === 0) {
-      paginationSummary.innerHTML = `Showing <strong class="text-on-surface">0</strong> of ${QUESTION_DATA.length} questions`;
+      const emptyText = `Showing <strong class="text-on-surface">0</strong> of ${QUESTION_DATA.length} questions`;
+      paginationSummary.innerHTML = emptyText;
       paginationControls.innerHTML = '';
+      if (paginationSummaryTop) paginationSummaryTop.innerHTML = emptyText;
+      if (paginationControlsTop) paginationControlsTop.innerHTML = '';
       return;
     }
 
-    paginationSummary.innerHTML = `Showing <strong class="text-on-surface">${shownFrom}-${shownTo}</strong> of ${total} questions`;
+    const summaryText = `Showing <strong class="text-on-surface">${shownFrom}-${shownTo}</strong> of ${total} questions`;
+    paginationSummary.innerHTML = summaryText;
+    if (paginationSummaryTop) paginationSummaryTop.innerHTML = summaryText;
 
     const pages = totalPages || 1;
     const current = state.page;
@@ -365,29 +411,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const prevDisabled = current <= 1;
     const nextDisabled = current >= pages;
 
-    paginationControls.innerHTML = `
-      <button class="px-3 py-1.5 rounded-lg font-label-md text-label-md transition-colors ${prevDisabled ? 'bg-surface-container text-outline cursor-not-allowed' : 'bg-surface-container hover:bg-surface-container-high text-on-surface'}" id="page-prev" ${prevDisabled ? 'disabled' : ''} type="button">Previous</button>
-      <div class="flex items-center gap-1">
-        ${[...new Set(pageNumbers)].map(p => p === "..."
-          ? `<span class="text-outline px-1">...</span>`
-          : `<button class="w-8 h-8 rounded-lg font-label-sm text-label-sm transition-colors ${p === current ? 'bg-primary-container text-on-primary-container font-semibold' : 'text-on-surface-variant hover:bg-surface-container'}" data-page="${p}" type="button">${p}</button>`
-        ).join('')}
-      </div>
-      <button class="px-3 py-1.5 rounded-lg font-label-md text-label-md transition-colors ${nextDisabled ? 'bg-surface-container text-outline cursor-not-allowed' : 'bg-surface-container hover:bg-surface-container-high text-on-surface'}" id="page-next" ${nextDisabled ? 'disabled' : ''} type="button">Next</button>
-    `;
+    function buildControlsHtml(isTop) {
+      const prefix = isTop ? "page-top-" : "page-";
+      return `
+        <div class="flex items-center gap-1 sm:gap-1.5">
+          <button class="px-2.5 sm:px-3 py-1.5 rounded-lg font-label-md text-xs sm:text-label-md transition-colors flex items-center gap-1 ${prevDisabled ? 'bg-surface-container/60 text-outline cursor-not-allowed opacity-50' : 'bg-surface-container hover:bg-surface-container-high text-on-surface active:scale-95'}" id="${prefix}prev" ${prevDisabled ? 'disabled' : ''} type="button" aria-label="Previous Page">
+            <span class="material-symbols-outlined text-sm sm:text-base">chevron_left</span>
+            <span class="hidden xs:inline">Prev</span>
+          </button>
+          
+          <div class="sm:hidden px-2 py-1 rounded bg-surface-container text-xs font-semibold text-on-surface whitespace-nowrap">
+            ${current} / ${pages}
+          </div>
 
-    document.getElementById("page-prev")?.addEventListener("click", () => {
-      if (state.page > 1) { state.page--; renderQuestions(); window.scrollTo({ top: 0, behavior: "smooth" }); }
-    });
-    document.getElementById("page-next")?.addEventListener("click", () => {
-      if (state.page < pages) { state.page++; renderQuestions(); window.scrollTo({ top: 0, behavior: "smooth" }); }
-    });
+          <div class="hidden sm:flex items-center gap-1">
+            ${[...new Set(pageNumbers)].map(p => p === "..."
+              ? `<span class="text-outline px-1 text-xs">...</span>`
+              : `<button class="w-8 h-8 rounded-lg font-label-sm text-label-sm transition-all ${p === current ? 'bg-primary-container text-on-primary-container font-bold shadow-sm ring-1 ring-primary/40' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}" data-page="${p}" type="button">${p}</button>`
+            ).join('')}
+          </div>
+
+          <button class="px-2.5 sm:px-3 py-1.5 rounded-lg font-label-md text-xs sm:text-label-md transition-colors flex items-center gap-1 ${nextDisabled ? 'bg-surface-container/60 text-outline cursor-not-allowed opacity-50' : 'bg-surface-container hover:bg-surface-container-high text-on-surface active:scale-95'}" id="${prefix}next" ${nextDisabled ? 'disabled' : ''} type="button" aria-label="Next Page">
+            <span class="hidden xs:inline">Next</span>
+            <span class="material-symbols-outlined text-sm sm:text-base">chevron_right</span>
+          </button>
+        </div>
+      `;
+    }
+
+    paginationControls.innerHTML = buildControlsHtml(false);
+    if (paginationControlsTop) {
+      paginationControlsTop.innerHTML = buildControlsHtml(true);
+    }
+
+    function handlePageChange(newPage) {
+      if (newPage < 1 || newPage > pages || newPage === state.page) return;
+      state.page = newPage;
+      renderQuestions();
+      exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Bottom controls
+    document.getElementById("page-prev")?.addEventListener("click", () => handlePageChange(state.page - 1));
+    document.getElementById("page-next")?.addEventListener("click", () => handlePageChange(state.page + 1));
     paginationControls.querySelectorAll("[data-page]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        state.page = parseInt(btn.dataset.page, 10);
-        renderQuestions();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+      btn.addEventListener("click", () => handlePageChange(parseInt(btn.dataset.page, 10)));
+    });
+
+    // Top controls
+    document.getElementById("page-top-prev")?.addEventListener("click", () => handlePageChange(state.page - 1));
+    document.getElementById("page-top-next")?.addEventListener("click", () => handlePageChange(state.page + 1));
+    paginationControlsTop?.querySelectorAll("[data-page]").forEach(btn => {
+      btn.addEventListener("click", () => handlePageChange(parseInt(btn.dataset.page, 10)));
     });
   }
 
@@ -441,6 +517,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (searchInput) searchInput.value = tag;
           if (searchInputHeader) searchInputHeader.value = tag;
           renderQuestions();
+          exploreView?.scrollTo({ top: 0, behavior: "smooth" });
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       });
@@ -457,6 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
     exploreView.style.display = "flex";
     quizView.classList.remove("active");
     if (paginationBar) paginationBar.style.display = "flex";
+    if (paginationBarTop) paginationBarTop.style.display = "flex";
 
     state.selectedCategory = "all";
     state.searchQuery = "";
@@ -838,6 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (searchInput) searchInput.value = value;
       if (searchInputHeader) searchInputHeader.value = value;
       renderQuestions();
+      exploreView?.scrollTo({ top: 0, behavior: "smooth" });
     };
     searchInput?.addEventListener("input", (e) => onSearchInput(e.target.value));
     searchInputHeader?.addEventListener("input", (e) => onSearchInput(e.target.value));
@@ -850,6 +929,7 @@ document.addEventListener("DOMContentLoaded", () => {
         state.difficultyFilter = chip.dataset.diff;
         state.page = 1;
         renderQuestions();
+        exploreView?.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
 
@@ -861,18 +941,19 @@ document.addEventListener("DOMContentLoaded", () => {
         state.statusFilter = chip.dataset.status;
         state.page = 1;
         renderQuestions();
+        exploreView?.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
 
     // Mode Switcher (nav)
     navBtns.forEach(btn => {
       btn.addEventListener("click", () => {
-        navBtns.forEach(b => setNavActive(b, false));
-        setNavActive(btn, true);
         state.mode = btn.dataset.mode;
+        navBtns.forEach(b => setNavActive(b, b.dataset.mode === state.mode));
 
         exploreView.style.display = state.mode === "explore" ? "flex" : "none";
         if (paginationBar) paginationBar.style.display = state.mode === "explore" ? "flex" : "none";
+        if (paginationBarTop) paginationBarTop.style.display = state.mode === "explore" ? "flex" : "none";
         quizView.classList.toggle("active", state.mode === "quiz");
 
         if (state.mode !== "quiz") stopQuizTimer();
@@ -901,7 +982,28 @@ document.addEventListener("DOMContentLoaded", () => {
     // Daily Drill / Resume
     dailyDrillBtn?.addEventListener("click", pickDailyDrill);
     dailyDrillBtnTop?.addEventListener("click", pickDailyDrill);
+    dailyDrillBtnMobile?.addEventListener("click", () => {
+      mobileTrackDrawer?.classList.remove("open");
+      pickDailyDrill();
+    });
     resumeBtn?.addEventListener("click", pickResumeQuestion);
+    resumeBtnMobile?.addEventListener("click", () => {
+      mobileTrackDrawer?.classList.remove("open");
+      pickResumeQuestion();
+    });
+
+    // Mobile Track Drawer Handlers
+    mobileTrackDrawerBtn?.addEventListener("click", () => {
+      mobileTrackDrawer?.classList.add("open");
+    });
+    mobileTrackDrawerCloseBtn?.addEventListener("click", () => {
+      mobileTrackDrawer?.classList.remove("open");
+    });
+    mobileTrackDrawerBackdrop?.addEventListener("click", () => {
+      mobileTrackDrawer?.classList.remove("open");
+    });
+    exportProgressBtnMobile?.addEventListener("click", exportProgressToJson);
+    importProgressBtnMobile?.addEventListener("click", () => importProgressInput?.click());
 
     // Keyboard Shortcuts for Quiz Mode: 1-4 pick an option, Space/Enter advances
     document.addEventListener("keydown", (e) => {
