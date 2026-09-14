@@ -2,9 +2,74 @@
 document.addEventListener("DOMContentLoaded", () => {
   const PAGE_SIZE = 25;
 
+  // Category Configuration - each domain carries its own Tailwind accent
+  // tokens (icon background, left-border accent, progress-fill color).
+  const CATEGORIES = [
+    { id: "all", name: "All Domains", icon: "🚀", topics: "Cross-functional preparation", iconBg: "bg-primary-container/25", border: "", fill: "bg-primary" },
+    { id: "android", name: "Android", icon: "🤖", topics: "Jetpack Compose, Coroutines, Memory, MVVM", iconBg: "bg-secondary/15", border: "border-secondary", fill: "bg-secondary" },
+    { id: "kotlin", name: "Kotlin", icon: "🟣", topics: "Language, Generics, Coroutines, Flow", iconBg: "bg-primary/15", border: "border-primary-fixed", fill: "bg-primary-fixed" },
+    { id: "oop", name: "OOP & Patterns", icon: "🧩", topics: "SOLID, Design Patterns, Architecture", iconBg: "bg-tertiary-container/25", border: "border-tertiary-container", fill: "bg-tertiary-container" },
+    { id: "dsa", name: "DSA", icon: "🧮", topics: "Arrays, Strings, Linked Lists, Trees, DP", iconBg: "bg-secondary-fixed/20", border: "border-secondary-fixed", fill: "bg-secondary-fixed" },
+    { id: "flutter", name: "Flutter", icon: "💙", topics: "Dart, Riverpod, BLoC, RenderObjects", iconBg: "bg-secondary-fixed/15", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" },
+    { id: "swiftui", name: "SwiftUI", icon: "🍊", topics: "Swift, @StateObject, Actors, Combine", iconBg: "bg-tertiary/15", border: "border-tertiary", fill: "bg-tertiary" },
+    { id: "react-native", name: "React Native", icon: "⚛️", topics: "JSI, Fabric, TurboModules, Hermes, Reanimated", iconBg: "bg-secondary-fixed/15", border: "border-secondary-fixed", fill: "bg-secondary-fixed" },
+    { id: "ai-eng", name: "AI Engineering", icon: "🧠", topics: "LLMs, RAG, Embeddings, Agents, Evals", iconBg: "bg-tertiary-container/25", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
+    { id: "chief-manager", name: "Chief Manager", icon: "🎖️", topics: "AI Strategy, FinOps, Cloud/DevOps, Architecture, Leadership", iconBg: "bg-secondary-container/20", border: "border-secondary", fill: "bg-secondary" },
+    { id: "project-management", name: "Project Mgmt", icon: "📊", topics: "Agile, Scrum, Scope Creep, Metrics", iconBg: "bg-primary-container/20", border: "border-primary-container", fill: "bg-primary-container" },
+    { id: "product-management", name: "Product Mgmt", icon: "🎯", topics: "RICE, PRD, Retention, Strategy", iconBg: "bg-tertiary-container/30", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
+    { id: "spring-boot", name: "Spring Boot", icon: "🍃", topics: "Java, IoC/DI, Security, JPA, Microservices", iconBg: "bg-secondary-container/20", border: "border-secondary-container", fill: "bg-secondary-container" },
+    { id: "nodejs", name: "Node.js", icon: "🟢", topics: "Event Loop, libuv, Streams, Worker Threads", iconBg: "bg-primary/15", border: "border-primary", fill: "bg-primary" },
+    { id: "full-stack", name: "Full Stack", icon: "⚡", topics: "OWASP, JWT, Auth, APIs", iconBg: "bg-tertiary-fixed/20", border: "border-tertiary-fixed", fill: "bg-tertiary-fixed" },
+    { id: "system-design", name: "System Design", icon: "🗺️", topics: "Scaling, Consistent Hashing, Feeds, Queues, Storage", iconBg: "bg-secondary-fixed-dim/20", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" }
+  ];
+
+  // Persistent category helpers across refresh and deep links
+  function getInitialCategory() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackParam = urlParams.get("track") || urlParams.get("category");
+      if (trackParam && (trackParam === "all" || CATEGORIES.some(c => c.id === trackParam))) {
+        return trackParam;
+      }
+
+      if (window.location.hash) {
+        const hash = window.location.hash.replace(/^#/, "");
+        const hashParams = new URLSearchParams(hash);
+        const hashTrack = hashParams.get("track") || hashParams.get("category") || hash;
+        if (hashTrack && (hashTrack === "all" || CATEGORIES.some(c => c.id === hashTrack))) {
+          return hashTrack;
+        }
+      }
+
+      const stored = localStorage.getItem("techprep_selected_category");
+      if (stored && (stored === "all" || CATEGORIES.some(c => c.id === stored))) {
+        return stored;
+      }
+    } catch (e) {
+      // Ignore in restricted environments
+    }
+    return "all";
+  }
+
+  function setCategory(catId) {
+    state.selectedCategory = catId;
+    try {
+      localStorage.setItem("techprep_selected_category", catId);
+      const url = new URL(window.location.href);
+      if (catId && catId !== "all") {
+        url.searchParams.set("track", catId);
+      } else {
+        url.searchParams.delete("track");
+      }
+      window.history.replaceState(null, "", url.toString());
+    } catch (e) {
+      // Ignore in restricted iframe
+    }
+  }
+
   // App State
   let state = {
-    selectedCategory: "all",
+    selectedCategory: getInitialCategory(),
     searchQuery: "",
     difficultyFilter: "all",
     statusFilter: "all",
@@ -73,27 +138,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportProgressBtn = document.getElementById("export-progress-btn");
   const importProgressBtn = document.getElementById("import-progress-btn");
   const importProgressInput = document.getElementById("import-progress-input");
-
-  // Category Configuration - each domain carries its own Tailwind accent
-  // tokens (icon background, left-border accent, progress-fill color).
-  const CATEGORIES = [
-    { id: "all", name: "All Domains", icon: "🚀", topics: "Cross-functional preparation", iconBg: "bg-primary-container/25", border: "", fill: "bg-primary" },
-    { id: "android", name: "Android", icon: "🤖", topics: "Jetpack Compose, Coroutines, Memory, MVVM", iconBg: "bg-secondary/15", border: "border-secondary", fill: "bg-secondary" },
-    { id: "kotlin", name: "Kotlin", icon: "🟣", topics: "Language, Generics, Coroutines, Flow", iconBg: "bg-primary/15", border: "border-primary-fixed", fill: "bg-primary-fixed" },
-    { id: "oop", name: "OOP & Patterns", icon: "🧩", topics: "SOLID, Design Patterns, Architecture", iconBg: "bg-tertiary-container/25", border: "border-tertiary-container", fill: "bg-tertiary-container" },
-    { id: "dsa", name: "DSA", icon: "🧮", topics: "Arrays, Strings, Linked Lists, Trees, DP", iconBg: "bg-secondary-fixed/20", border: "border-secondary-fixed", fill: "bg-secondary-fixed" },
-    { id: "flutter", name: "Flutter", icon: "💙", topics: "Dart, Riverpod, BLoC, RenderObjects", iconBg: "bg-secondary-fixed/15", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" },
-    { id: "swiftui", name: "SwiftUI", icon: "🍊", topics: "Swift, @StateObject, Actors, Combine", iconBg: "bg-tertiary/15", border: "border-tertiary", fill: "bg-tertiary" },
-    { id: "react-native", name: "React Native", icon: "⚛️", topics: "JSI, Fabric, TurboModules, Hermes, Reanimated", iconBg: "bg-secondary-fixed/15", border: "border-secondary-fixed", fill: "bg-secondary-fixed" },
-    { id: "ai-eng", name: "AI Engineering", icon: "🧠", topics: "LLMs, RAG, Embeddings, Agents, Evals", iconBg: "bg-tertiary-container/25", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
-    { id: "chief-manager", name: "Chief Manager", icon: "🎖️", topics: "Architecture, Cloud/DevOps, Delivery, Eng Leadership", iconBg: "bg-secondary-container/20", border: "border-secondary", fill: "bg-secondary" },
-    { id: "project-management", name: "Project Mgmt", icon: "📊", topics: "Agile, Scrum, Scope Creep, Metrics", iconBg: "bg-primary-container/20", border: "border-primary-container", fill: "bg-primary-container" },
-    { id: "product-management", name: "Product Mgmt", icon: "🎯", topics: "RICE, PRD, Retention, Strategy", iconBg: "bg-tertiary-container/30", border: "border-tertiary-fixed-dim", fill: "bg-tertiary-fixed-dim" },
-    { id: "spring-boot", name: "Spring Boot", icon: "🍃", topics: "Java, IoC/DI, Security, JPA, Microservices", iconBg: "bg-secondary-container/20", border: "border-secondary-container", fill: "bg-secondary-container" },
-    { id: "nodejs", name: "Node.js", icon: "🟢", topics: "Event Loop, libuv, Streams, Worker Threads", iconBg: "bg-primary/15", border: "border-primary", fill: "bg-primary" },
-    { id: "full-stack", name: "Full Stack", icon: "⚡", topics: "OWASP, JWT, Auth, APIs", iconBg: "bg-tertiary-fixed/20", border: "border-tertiary-fixed", fill: "bg-tertiary-fixed" },
-    { id: "system-design", name: "System Design", icon: "🗺️", topics: "Scaling, Consistent Hashing, Feeds, Queues, Storage", iconBg: "bg-secondary-fixed-dim/20", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" }
-  ];
 
   const DIFF_BADGE_CLASSES = {
     Junior: "bg-secondary/15 text-secondary",
@@ -228,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll("[data-cat-id]").forEach(card => {
       card.addEventListener("click", () => {
-        state.selectedCategory = card.dataset.catId;
+        setCategory(card.dataset.catId);
         state.page = 1;
         renderCategoryGrid();
         renderQuestions();
@@ -536,7 +580,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (paginationBar) paginationBar.style.display = "flex";
     if (paginationBarTop) paginationBarTop.style.display = "flex";
 
-    state.selectedCategory = "all";
+    setCategory("all");
     state.searchQuery = "";
     state.difficultyFilter = "all";
     state.statusFilter = "all";
@@ -1015,6 +1059,18 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("quiz-next")?.click();
       }
     });
+
+    // Browser navigation (Back / Forward button) synchronization
+    window.addEventListener("popstate", () => {
+      const cat = getInitialCategory();
+      if (cat !== state.selectedCategory) {
+        state.selectedCategory = cat;
+        state.page = 1;
+        renderCategoryGrid();
+        renderQuestions();
+        updateTelemetry();
+      }
+    });
   }
 
   // Export Q&As to Markdown File
@@ -1052,7 +1108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // download the user can keep, move to another browser/device, or
   // restore from later.
   // ==========================================
-  const PROGRESS_KEYS = ["techprep_bookmarks", "techprep_mastered", "techprep_streak", "techprep_theme"];
+  const PROGRESS_KEYS = ["techprep_bookmarks", "techprep_mastered", "techprep_streak", "techprep_theme", "techprep_selected_category"];
 
   function exportProgressToJson() {
     const data = { exportedAt: new Date().toISOString(), version: 1 };
@@ -1088,6 +1144,7 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
       });
 
+      state.selectedCategory = getInitialCategory();
       state.bookmarks = JSON.parse(localStorage.getItem("techprep_bookmarks")) || [];
       state.mastered = JSON.parse(localStorage.getItem("techprep_mastered")) || [];
       applyTheme(localStorage.getItem("techprep_theme") || "dark");
