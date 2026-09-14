@@ -343,7 +343,37 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    questionFeed.innerHTML = pageItems.map(q => {
+    let executiveBannerHtml = "";
+    if (state.selectedCategory === "chief-manager" && state.page === 1 && !state.searchQuery.trim() && state.difficultyFilter === "all" && state.statusFilter === "all") {
+      executiveBannerHtml = `
+        <aside class="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-secondary-container/25 via-surface-container-high/40 to-primary-container/20 border border-secondary/40 shadow-lg relative overflow-hidden">
+          <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-secondary/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-secondary/20 border border-secondary/30 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">🎖️</div>
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-md bg-secondary text-on-secondary font-label-sm text-[11px] font-bold uppercase tracking-wider">Executive Spotlight</span>
+                  <span class="px-2 py-0.5 rounded-md bg-surface-container-highest text-on-surface-variant font-label-sm text-[11px]">149 Questions &bull; 10 Core Domains</span>
+                </div>
+                <h2 class="font-headline-sm text-base sm:text-lg text-on-surface font-bold mt-1.5">Chief Manager &amp; Director of Engineering Command Center</h2>
+                <p class="font-body-sm text-xs sm:text-body-sm text-on-surface-variant mt-1 max-w-3xl leading-relaxed">
+                  Start your interview preparation with the <strong>Executive Self-Introduction Script</strong> below (90s elevator pitch + 3min narrative), covering Cloud-Native Microservices, Mobile Engineering, FinTech Ledgers, AI Strategy, and FinOps.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 self-start md:self-center flex-shrink-0">
+              <button onclick="document.getElementById('card-cm-intro-01')?.scrollIntoView({ behavior: 'smooth', block: 'start' })" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-secondary to-inverse-primary text-on-secondary font-label-md text-xs sm:text-label-md font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer" type="button">
+                <span class="material-symbols-outlined text-base">record_voice_over</span>
+                <span>Self-Intro Script</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+      `;
+    }
+
+    questionFeed.innerHTML = executiveBannerHtml + pageItems.map(q => {
       const isBookmarked = state.bookmarks.includes(q.id);
       const isMastered = state.mastered.includes(q.id);
       const diffClasses = DIFF_BADGE_CLASSES[q.difficulty] || "bg-surface-container-highest text-on-surface-variant";
