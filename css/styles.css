@@ -4,8 +4,8 @@
    in index.html + js/app.js, driven by css/theme.css
    design tokens. This file only covers the pieces that
    aren't practical as pure utility classes: the raw
-   answer-HTML typography, code blocks, the flashcard 3D
-   flip, the quiz shell, and glossary tooltips.)
+   answer-HTML typography, code blocks, the quiz shell,
+   and glossary tooltips.)
    ========================================== */
 
 * {
@@ -162,80 +162,6 @@ button {
 }
 
 /* ==========================================
-   Flashcard Mode View
-   ========================================== */
-.flashcard-view {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  max-width: 800px;
-  margin: 20px auto;
-  width: 100%;
-}
-
-.flashcard-view.active {
-  display: flex;
-}
-
-.flashcard-wrapper {
-  perspective: 1000px;
-  width: 100%;
-  height: 420px;
-  cursor: pointer;
-}
-
-.flashcard-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-}
-
-.flashcard-wrapper.flipped .flashcard-inner {
-  transform: rotateY(180deg);
-}
-
-.flashcard-front, .flashcard-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  border-radius: 0.75rem;
-  border: 1px solid rgb(var(--outline-variant) / 0.5);
-  background: rgb(var(--surface-container) / 0.85);
-  backdrop-filter: blur(16px);
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-}
-
-.flashcard-back {
-  transform: rotateY(180deg);
-  text-align: left;
-  overflow-y: auto;
-}
-
-.card-hint {
-  font-size: 12px;
-  color: rgb(var(--on-surface-variant));
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.flashcard-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-/* ==========================================
    Quiz / Practice Mode View
    ========================================== */
 .quiz-view {
@@ -309,9 +235,3 @@ button {
   pointer-events: auto;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .flashcard-wrapper {
-    height: 480px;
-  }
-}

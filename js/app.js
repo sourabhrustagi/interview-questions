@@ -8,17 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
     searchQuery: "",
     difficultyFilter: "all",
     statusFilter: "all",
-    mode: "explore", // 'explore', 'flashcards', 'quiz'
+    mode: "explore", // 'explore', 'quiz'
     theme: localStorage.getItem("techprep_theme") || "dark",
     page: 1,
 
     // User progress stored in localStorage
     bookmarks: JSON.parse(localStorage.getItem("techprep_bookmarks")) || [],
     mastered: JSON.parse(localStorage.getItem("techprep_mastered")) || [],
-
-    // Flashcard State
-    flashcardIndex: 0,
-    flashcardFlipped: false,
 
     // Quiz State
     quizQuestions: [],
@@ -40,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportBtn = document.getElementById("export-btn");
 
   const exploreView = document.getElementById("explore-view");
-  const flashcardView = document.getElementById("flashcard-view");
   const quizView = document.getElementById("quiz-view");
 
   const trackCountBadge = document.getElementById("track-count-badge");
@@ -197,7 +192,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderCategoryGrid();
         renderQuestions();
         updateTelemetry();
-        if (state.mode === 'flashcards') setupFlashcards();
       });
     });
   }
@@ -443,7 +437,6 @@ document.addEventListener("DOMContentLoaded", () => {
           if (searchInput) searchInput.value = tag;
           if (searchInputHeader) searchInputHeader.value = tag;
           renderQuestions();
-          if (state.mode === 'flashcards') setupFlashcards();
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       });
@@ -458,7 +451,6 @@ document.addEventListener("DOMContentLoaded", () => {
     state.mode = "explore";
     navBtns.forEach(b => setNavActive(b, b.dataset.mode === "explore"));
     exploreView.style.display = "flex";
-    flashcardView.classList.remove("active");
     quizView.classList.remove("active");
     if (paginationBar) paginationBar.style.display = "flex";
 
@@ -534,81 +526,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ==========================================
-  // Flashcard Mode Logic
-  // ==========================================
-  function setupFlashcards() {
-    const questions = getFilteredQuestions();
-    state.flashcardIndex = 0;
-    state.flashcardFlipped = false;
-    renderFlashcard(questions);
-  }
-
-  function renderFlashcard(questions) {
-    if (!questions || questions.length === 0) {
-      flashcardView.innerHTML = `
-        <div class="text-center py-12 text-on-surface-variant">
-          <h3 class="font-headline-sm text-headline-sm text-on-surface">No questions available for current filter</h3>
-          <p class="font-body-sm text-body-sm mt-1">Please select a different category or search parameter.</p>
-        </div>
-      `;
-      return;
-    }
-
-    const q = questions[state.flashcardIndex];
-    flashcardView.innerHTML = `
-      <div class="flashcard-wrapper ${state.flashcardFlipped ? 'flipped' : ''}" id="flashcard">
-        <div class="flashcard-inner">
-          <div class="flashcard-front">
-            <div class="flex gap-2">
-              <span class="px-2.5 py-1 rounded-md bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold uppercase">${q.categoryName}</span>
-              <span class="px-2.5 py-1 rounded-md ${DIFF_BADGE_CLASSES[q.difficulty] || ''} font-label-sm text-label-sm font-semibold uppercase">${q.difficulty}</span>
-            </div>
-            <div class="font-headline-sm text-headline-sm text-on-surface">${q.title}</div>
-            <div class="card-hint">Click or press Space to flip card 🔄</div>
-          </div>
-
-          <div class="flashcard-back">
-            <div class="font-label-md text-label-md text-secondary font-semibold uppercase tracking-wider mb-2">Model Answer:</div>
-            <div class="answer-content">${linkifyGlossary(q.answer, q.glossary)}</div>
-            ${q.code ? `<div class="code-block mt-3"><pre><code>${escapeHtml(q.code)}</code></pre></div>` : ''}
-          </div>
-        </div>
-      </div>
-
-      <div class="flashcard-controls">
-        <button class="px-space-sm py-2 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-colors" id="fc-prev" type="button">← Previous</button>
-        <span class="font-label-md text-label-md text-on-surface-variant">${state.flashcardIndex + 1} / ${questions.length}</span>
-        <button class="px-space-sm py-2 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-colors" id="fc-next" type="button">Next →</button>
-      </div>
-    `;
-
-    const cardEl = document.getElementById("flashcard");
-    if (cardEl) {
-      cardEl.addEventListener("click", () => {
-        state.flashcardFlipped = !state.flashcardFlipped;
-        cardEl.classList.toggle("flipped", state.flashcardFlipped);
-      });
-    }
-
-    document.getElementById("fc-prev")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (state.flashcardIndex > 0) {
-        state.flashcardIndex--;
-        state.flashcardFlipped = false;
-        renderFlashcard(questions);
-      }
-    });
-
-    document.getElementById("fc-next")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (state.flashcardIndex < questions.length - 1) {
-        state.flashcardIndex++;
-        state.flashcardFlipped = false;
-        renderFlashcard(questions);
-      }
-    });
-  }
 
   // ==========================================
   // Quiz Mode — timed self-assessment over the currently-filtered content
@@ -864,7 +781,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (searchInput) searchInput.value = value;
       if (searchInputHeader) searchInputHeader.value = value;
       renderQuestions();
-      if (state.mode === 'flashcards') setupFlashcards();
     };
     searchInput?.addEventListener("input", (e) => onSearchInput(e.target.value));
     searchInputHeader?.addEventListener("input", (e) => onSearchInput(e.target.value));
@@ -877,7 +793,6 @@ document.addEventListener("DOMContentLoaded", () => {
         state.difficultyFilter = chip.dataset.diff;
         state.page = 1;
         renderQuestions();
-        if (state.mode === 'flashcards') setupFlashcards();
       });
     });
 
@@ -889,7 +804,6 @@ document.addEventListener("DOMContentLoaded", () => {
         state.statusFilter = chip.dataset.status;
         state.page = 1;
         renderQuestions();
-        if (state.mode === 'flashcards') setupFlashcards();
       });
     });
 
@@ -902,11 +816,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         exploreView.style.display = state.mode === "explore" ? "flex" : "none";
         if (paginationBar) paginationBar.style.display = state.mode === "explore" ? "flex" : "none";
-        flashcardView.classList.toggle("active", state.mode === "flashcards");
         quizView.classList.toggle("active", state.mode === "quiz");
 
         if (state.mode !== "quiz") stopQuizTimer();
-        if (state.mode === "flashcards") setupFlashcards();
         if (state.mode === "quiz") setupQuiz();
       });
     });
@@ -925,22 +837,9 @@ document.addEventListener("DOMContentLoaded", () => {
     dailyDrillBtnTop?.addEventListener("click", pickDailyDrill);
     resumeBtn?.addEventListener("click", pickResumeQuestion);
 
-    // Keyboard Shortcuts for Flashcards
+    // Keyboard Shortcuts for Quiz Mode
     document.addEventListener("keydown", (e) => {
-      if (state.mode === "flashcards") {
-        if (e.code === "Space") {
-          e.preventDefault();
-          const cardEl = document.getElementById("flashcard");
-          if (cardEl) {
-            state.flashcardFlipped = !state.flashcardFlipped;
-            cardEl.classList.toggle("flipped", state.flashcardFlipped);
-          }
-        } else if (e.code === "ArrowRight") {
-          document.getElementById("fc-next")?.click();
-        } else if (e.code === "ArrowLeft") {
-          document.getElementById("fc-prev")?.click();
-        }
-      } else if (state.mode === "quiz") {
+      if (state.mode === "quiz") {
         if (e.code === "Space") {
           e.preventDefault();
           document.getElementById("quiz-reveal")?.click();
