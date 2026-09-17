@@ -20,7 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "spring-boot", name: "Spring Boot", icon: "🍃", topics: "Java, IoC/DI, Security, JPA, Microservices", iconBg: "bg-secondary-container/20", border: "border-secondary-container", fill: "bg-secondary-container" },
     { id: "nodejs", name: "Node.js", icon: "🟢", topics: "Event Loop, libuv, Streams, Worker Threads", iconBg: "bg-primary/15", border: "border-primary", fill: "bg-primary" },
     { id: "full-stack", name: "Full Stack", icon: "⚡", topics: "OWASP, JWT, Auth, APIs", iconBg: "bg-tertiary-fixed/20", border: "border-tertiary-fixed", fill: "bg-tertiary-fixed" },
-    { id: "system-design", name: "System Design", icon: "🗺️", topics: "Scaling, Consistent Hashing, Feeds, Queues, Storage", iconBg: "bg-secondary-fixed-dim/20", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" }
+    { id: "system-design", name: "System Design", icon: "🗺️", topics: "Scaling, Consistent Hashing, Feeds, Queues, Storage", iconBg: "bg-secondary-fixed-dim/20", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" },
+    { id: "mobile-architect", name: "Mobile Architect", icon: "🧭", topics: "Modularization, MVI, Observability, Design Systems", iconBg: "bg-tertiary/20", border: "border-tertiary", fill: "bg-tertiary" }
   ];
 
   // Persistent category helpers across refresh and deep links
