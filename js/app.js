@@ -77,6 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
     mode: "explore", // 'explore', 'quiz'
     theme: localStorage.getItem("techprep_theme") || "dark",
     page: 1,
+    order: localStorage.getItem("techprep_order") || "default", // 'default' or 'random'
+    randomOrderMap: new Map(),
 
     // User progress stored in localStorage
     bookmarks: JSON.parse(localStorage.getItem("techprep_bookmarks")) || [],
@@ -101,6 +103,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const themeBtn = document.getElementById("theme-toggle-btn");
   const themeToggleIcon = document.getElementById("theme-toggle-icon");
   const exportBtn = document.getElementById("export-btn");
+  const randomQuestionBtnTop = document.getElementById("random-question-btn-top");
+  const sidebarRandomBtn = document.getElementById("sidebar-random-btn");
+  const reshuffleBtn = document.getElementById("reshuffle-btn");
 
   const exploreView = document.getElementById("explore-view");
   const quizView = document.getElementById("quiz-view");
@@ -285,9 +290,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Randomize Question Ordering
+  function generateRandomOrder() {
+    state.randomOrderMap.clear();
+    const ids = QUESTION_DATA.map(q => q.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    ids.forEach((id, idx) => state.randomOrderMap.set(id, idx));
+  }
+
   // Filter Questions based on State
   function getFilteredQuestions() {
-    return QUESTION_DATA.filter(q => {
+    const list = QUESTION_DATA.filter(q => {
       if (state.selectedCategory !== "all" && q.category !== state.selectedCategory) return false;
       if (state.difficultyFilter !== "all" && q.difficulty !== state.difficultyFilter) return false;
       if (state.statusFilter === "bookmarked" && !state.bookmarks.includes(q.id)) return false;
@@ -302,6 +318,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return true;
     });
+
+    if (state.order === "random") {
+      if (state.randomOrderMap.size === 0) {
+        generateRandomOrder();
+      }
+      return list.slice().sort((a, b) => {
+        const orderA = state.randomOrderMap.get(a.id) ?? 0;
+        const orderB = state.randomOrderMap.get(b.id) ?? 0;
+        return orderA - orderB;
+      });
+    }
+
+    return list;
   }
 
   function updateTelemetry() {
@@ -467,7 +496,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const summaryText = `Showing <strong class="text-on-surface">${shownFrom}-${shownTo}</strong> of ${total} questions`;
+    const randomBadge = state.order === "random"
+      ? ` <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary/15 text-tertiary font-mono"><span class="material-symbols-outlined text-[11px]">shuffle</span> Shuffled</span>`
+      : "";
+    const summaryText = `Showing <strong class="text-on-surface">${shownFrom}-${shownTo}</strong> of ${total} questions${randomBadge}`;
     paginationSummary.innerHTML = summaryText;
     if (paginationSummaryTop) paginationSummaryTop.innerHTML = summaryText;
 
@@ -602,7 +634,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // Jump-to-question helper (used by Daily Drill & Resume)
   // ==========================================
-  function jumpToQuestion(q) {
+  function jumpToQuestion(q, keepCurrentTrack = false) {
     if (!q) return;
     state.mode = "explore";
     navBtns.forEach(b => setNavActive(b, b.dataset.mode === "explore"));
@@ -611,15 +643,25 @@ document.addEventListener("DOMContentLoaded", () => {
     if (paginationBar) paginationBar.style.display = "flex";
     if (paginationBarTop) paginationBarTop.style.display = "flex";
 
-    setCategory("all");
-    state.searchQuery = "";
-    state.difficultyFilter = "all";
-    state.statusFilter = "all";
-    if (searchInput) searchInput.value = "";
-    if (searchInputHeader) searchInputHeader.value = "";
-    resetPillActive(".diff-filter", "all");
-    resetPillActive(".status-filter", "all");
-    renderCategoryGrid();
+    if (!keepCurrentTrack) {
+      setCategory("all");
+      state.searchQuery = "";
+      state.difficultyFilter = "all";
+      state.statusFilter = "all";
+      if (searchInput) searchInput.value = "";
+      if (searchInputHeader) searchInputHeader.value = "";
+      resetPillActive(".diff-filter", "all");
+      resetPillActive(".status-filter", "all");
+      renderCategoryGrid();
+    } else {
+      if (state.selectedCategory !== "all" && q.category !== state.selectedCategory) {
+        setCategory(q.category);
+        renderCategoryGrid();
+      }
+      state.searchQuery = "";
+      if (searchInput) searchInput.value = "";
+      if (searchInputHeader) searchInputHeader.value = "";
+    }
 
     const filtered = getFilteredQuestions();
     const idx = filtered.findIndex(item => item.id === q.id);
@@ -647,6 +689,13 @@ document.addEventListener("DOMContentLoaded", () => {
     jumpToQuestion(pick);
   }
 
+  function pickRandomQuestion() {
+    const pool = getFilteredQuestions();
+    if (!pool || pool.length === 0) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    jumpToQuestion(pick, true);
+  }
+
   function pickResumeQuestion() {
     const unmastered = QUESTION_DATA.find(q => !state.mastered.includes(q.id));
     jumpToQuestion(unmastered || QUESTION_DATA[0]);
@@ -654,7 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetPillActive(selector, targetValue) {
     document.querySelectorAll(selector).forEach(btn => {
-      const isActive = (btn.dataset.diff || btn.dataset.status) === targetValue;
+      const isActive = (btn.dataset.diff || btn.dataset.status || btn.dataset.order) === targetValue;
       setPillActive(btn, isActive);
     });
   }
@@ -1019,6 +1068,58 @@ document.addEventListener("DOMContentLoaded", () => {
         exploreView?.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
+
+    // Order Filter Pills (Curated vs Random)
+    function updateOrderControls() {
+      document.querySelectorAll(".order-filter").forEach(c => {
+        const isActive = c.dataset.order === state.order;
+        setPillActive(c, isActive);
+      });
+      if (reshuffleBtn) {
+        if (state.order === "random") {
+          reshuffleBtn.classList.remove("hidden");
+          reshuffleBtn.classList.add("inline-flex");
+        } else {
+          reshuffleBtn.classList.add("hidden");
+          reshuffleBtn.classList.remove("inline-flex");
+        }
+      }
+    }
+    updateOrderControls();
+
+    document.querySelectorAll(".order-filter").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const targetOrder = chip.dataset.order;
+        if (targetOrder === "random" && state.order !== "random") {
+          generateRandomOrder();
+        }
+        state.order = targetOrder;
+        try {
+          localStorage.setItem("techprep_order", targetOrder);
+        } catch (e) {}
+        updateOrderControls();
+        state.page = 1;
+        renderQuestions();
+        exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+
+    // Reshuffle Questions Button
+    reshuffleBtn?.addEventListener("click", () => {
+      const icon = reshuffleBtn.querySelector(".material-symbols-outlined");
+      if (icon) {
+        icon.classList.add("animate-spin");
+        setTimeout(() => icon.classList.remove("animate-spin"), 400);
+      }
+      generateRandomOrder();
+      state.page = 1;
+      renderQuestions();
+      exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // Random Question Picks
+    randomQuestionBtnTop?.addEventListener("click", pickRandomQuestion);
+    sidebarRandomBtn?.addEventListener("click", pickRandomQuestion);
 
     // Mode Switcher (nav)
     navBtns.forEach(btn => {

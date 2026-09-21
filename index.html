@@ -193,9 +193,12 @@
           </div>
         </div>
         <p class="font-body-sm text-[11px] text-on-surface-variant leading-relaxed">Keep answering and marking questions mastered to raise your readiness score.</p>
-        <div class="grid grid-cols-2 gap-2 pt-0.5">
-          <button id="daily-drill-btn" class="px-2.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-center text-xs transition-colors" type="button">Daily Drill</button>
-          <button id="resume-btn" class="px-2.5 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container hover:opacity-90 font-label-sm text-center text-xs font-semibold transition-opacity" type="button">Resume</button>
+        <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+          <button id="daily-drill-btn" class="px-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-center text-[11px] truncate transition-colors" type="button">Daily Drill</button>
+          <button id="resume-btn" class="px-1.5 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container hover:opacity-90 font-label-sm text-center text-[11px] font-semibold truncate transition-opacity" type="button">Resume</button>
+          <button id="sidebar-random-btn" class="px-1.5 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-center text-[11px] truncate flex items-center justify-center gap-0.5 transition-colors" type="button" title="Pick a random question in current track">
+            <span class="material-symbols-outlined text-xs text-secondary">casino</span> Random
+          </button>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <button id="export-progress-btn" class="flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-bright font-label-sm text-xs transition-colors" type="button">
@@ -244,6 +247,10 @@
               <span class="material-symbols-outlined text-xs">bolt</span>
               <span>Daily Drill</span>
             </button>
+            <button id="random-question-btn-top" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-md text-xs sm:text-label-md transition-colors border border-surface-container-high" type="button" title="Jump to a random question in this track">
+              <span class="material-symbols-outlined text-xs text-secondary">casino</span>
+              <span class="hidden xs:inline">Random Pick</span>
+            </button>
           </div>
         </div>
 
@@ -271,6 +278,19 @@
                 <button class="status-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs flex items-center gap-0.5 transition-colors" data-status="bookmarked" type="button"><span class="text-tertiary">★</span> Bookmarked</button>
                 <button class="status-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs flex items-center gap-0.5 transition-colors" data-status="mastered" type="button"><span class="text-secondary">✓</span> Mastered</button>
               </div>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <span class="font-label-sm text-[10px] sm:text-label-sm text-on-surface-variant uppercase">Order:</span>
+              <div class="inline-flex p-0.5 rounded-lg bg-surface-container-lowest/80 text-xs" id="order-pills">
+                <button class="order-filter px-2 py-0.5 rounded-md bg-gradient-to-r from-primary to-inverse-primary text-on-primary font-label-sm text-xs font-semibold shadow-sm active" data-order="default" type="button" title="Curated sequential order">Curated</button>
+                <button class="order-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs flex items-center gap-1 transition-colors" data-order="random" type="button" title="Randomize questions order">
+                  <span class="material-symbols-outlined text-[13px]">shuffle</span>
+                  <span>Random</span>
+                </button>
+              </div>
+              <button id="reshuffle-btn" class="hidden items-center justify-center w-6 h-6 rounded-md text-on-surface-variant hover:text-tertiary hover:bg-surface-container-high transition-all" type="button" title="Reshuffle question order">
+                <span class="material-symbols-outlined text-sm">cached</span>
+              </button>
             </div>
           </div>
         </div>
@@ -411,6 +431,10 @@
   <script src="js/data-batch29.js?v=1"></script>
   <!-- Spring Boot testing/production readiness expansion, installment 2 (batch 30) -->
   <script src="js/data-batch30.js?v=1"></script>
-  <script src="js/app.js?v=33"></script>
+  <!-- Mobile Architect: Religare Broking (RBL) top interview questions (batch 31) -->
+  <script src="js/data-batch31.js?v=1"></script>
+  <!-- Mobile Architect: Architecture, Concurrency, Modularization, Jetpack Compose & Full Lifecycle (batch 32) -->
+  <script src="js/data-batch32.js?v=1"></script>
+  <script src="js/app.js?v=35"></script>
 </body>
 </html>
