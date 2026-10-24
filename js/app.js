@@ -21,7 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "nodejs", name: "Node.js", icon: "🟢", topics: "Event Loop, libuv, Streams, Worker Threads", iconBg: "bg-primary/15", border: "border-primary", fill: "bg-primary" },
     { id: "full-stack", name: "Full Stack", icon: "⚡", topics: "OWASP, JWT, Auth, APIs", iconBg: "bg-tertiary-fixed/20", border: "border-tertiary-fixed", fill: "bg-tertiary-fixed" },
     { id: "system-design", name: "System Design", icon: "🗺️", topics: "Scaling, Consistent Hashing, Feeds, Queues, Storage", iconBg: "bg-secondary-fixed-dim/20", border: "border-secondary-fixed-dim", fill: "bg-secondary-fixed-dim" },
-    { id: "mobile-architect", name: "Mobile Architect", icon: "🧭", topics: "Modularization, MVI, Observability, Design Systems", iconBg: "bg-tertiary/20", border: "border-tertiary", fill: "bg-tertiary" }
+    { id: "mobile-architect", name: "Mobile Architect", icon: "🧭", topics: "Modularization, MVI, Observability, Design Systems", iconBg: "bg-tertiary/20", border: "border-tertiary", fill: "bg-tertiary" },
+    { id: "fintech-backend", name: "FinTech & Backend Lead", icon: "💳", topics: "Payoneer, Payments, Idempotency, Kafka, DBs, EM", iconBg: "bg-secondary-container/25", border: "border-secondary", fill: "bg-secondary" }
   ];
 
   // Persistent category helpers across refresh and deep links
@@ -74,10 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
     searchQuery: "",
     difficultyFilter: "all",
     statusFilter: "all",
+    dateFilter: "all", // 'all', 'today', '7d', '30d', or 'range'
+    dateFrom: null,
+    dateTo: null,
     mode: "explore", // 'explore', 'quiz'
     theme: localStorage.getItem("techprep_theme") || "dark",
     page: 1,
-    order: localStorage.getItem("techprep_order") || "default", // 'default' or 'random'
+    order: localStorage.getItem("techprep_order") || "default", // 'default', 'newest', 'random'
     randomOrderMap: new Map(),
 
     // User progress stored in localStorage
@@ -152,10 +156,63 @@ document.addEventListener("DOMContentLoaded", () => {
     Lead: "bg-error-container/30 text-error"
   };
 
+  // Normalize dateAdded across all questions so date filtering works reliably
+  function normalizeQuestionDates() {
+    const today = new Date().toISOString().slice(0, 10);
+    QUESTION_DATA.forEach(q => {
+      if (!q.dateAdded) {
+        if (q.id && q.id.startsWith("b34-")) {
+          q.dateAdded = today;
+        } else if (q.id && q.id.startsWith("b33-")) {
+          q.dateAdded = "2026-10-23";
+        } else if (q.id && q.id.startsWith("b32-")) {
+          q.dateAdded = "2026-10-21";
+        } else if (q.id && q.id.startsWith("b31-")) {
+          q.dateAdded = "2026-10-20";
+        } else if (q.id && (q.id.startsWith("b30-") || q.id.startsWith("b29-") || q.id.startsWith("b28-"))) {
+          q.dateAdded = "2026-10-18";
+        } else if (q.id && (q.id.startsWith("b27-") || q.id.startsWith("b26-") || q.id.startsWith("b25-"))) {
+          q.dateAdded = "2026-10-15";
+        } else if (q.id && (q.id.startsWith("cm-") || q.id.startsWith("b24-") || q.id.startsWith("b23-") || q.id.startsWith("b22-"))) {
+          q.dateAdded = "2026-10-10";
+        } else {
+          q.dateAdded = "2026-10-01";
+        }
+      }
+    });
+  }
+
+  function formatCardDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+      const parts = dateStr.split("-");
+      if (parts.length !== 3) return dateStr;
+      const [y, m, d] = parts;
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthName = months[parseInt(m, 10) - 1] || m;
+      return `${monthName} ${parseInt(d, 10)}, ${y}`;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  function isQuestionNew(dateStr) {
+    if (!dateStr) return false;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const diffTime = new Date(today).getTime() - new Date(dateStr).getTime();
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= 3;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Initialize App
   init();
 
   function init() {
+    normalizeQuestionDates();
     applyTheme(state.theme);
     updateStreak();
     renderCategoryGrid();
@@ -303,11 +360,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Filter Questions based on State
   function getFilteredQuestions() {
+    const today = new Date().toISOString().slice(0, 10);
     const list = QUESTION_DATA.filter(q => {
       if (state.selectedCategory !== "all" && q.category !== state.selectedCategory) return false;
       if (state.difficultyFilter !== "all" && q.difficulty !== state.difficultyFilter) return false;
       if (state.statusFilter === "bookmarked" && !state.bookmarks.includes(q.id)) return false;
       if (state.statusFilter === "mastered" && !state.mastered.includes(q.id)) return false;
+      
+      // Date Filter
+      if (state.dateFilter !== "all") {
+        const qDate = q.dateAdded || "2026-10-01";
+        if (state.dateFilter === "today") {
+          if (qDate !== today) return false;
+        } else if (state.dateFilter === "7d") {
+          const diffTime = new Date(today).getTime() - new Date(qDate).getTime();
+          const diffDays = diffTime / (1000 * 60 * 60 * 24);
+          if (diffDays < 0 || diffDays > 7) return false;
+        } else if (state.dateFilter === "30d") {
+          const diffTime = new Date(today).getTime() - new Date(qDate).getTime();
+          const diffDays = diffTime / (1000 * 60 * 60 * 24);
+          if (diffDays < 0 || diffDays > 30) return false;
+        } else if (state.dateFilter === "range") {
+          if (state.dateFrom && qDate < state.dateFrom) return false;
+          if (state.dateTo && qDate > state.dateTo) return false;
+        } else {
+          // Exact date match
+          if (qDate !== state.dateFilter) return false;
+        }
+      }
+
       if (state.searchQuery.trim() !== "") {
         const query = state.searchQuery.toLowerCase();
         const inTitle = q.title.toLowerCase().includes(query);
@@ -318,6 +399,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return true;
     });
+
+    if (state.order === "newest") {
+      return list.slice().sort((a, b) => {
+        const dateA = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
+        const dateB = b.dateAdded ? new Date(b.dateAdded).getTime() : 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return (b.id || "").localeCompare(a.id || "");
+      });
+    }
 
     if (state.order === "random") {
       if (state.randomOrderMap.size === 0) {
@@ -366,7 +456,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="text-center py-12 text-on-surface-variant">
           <div class="text-5xl mb-3">🔍</div>
           <h3 class="font-headline-sm text-headline-sm text-on-surface">No Questions Found</h3>
-          <p class="font-body-sm text-body-sm mt-1">Try adjusting your search criteria or category filters.</p>
+          <p class="font-body-sm text-body-sm mt-1">Try adjusting your search criteria, category, or date filters.</p>
+          ${state.dateFilter !== "all" ? `
+            <button class="mt-3 px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-xs font-semibold hover:opacity-90 transition-opacity" data-action="reset-date-filter" type="button">Reset Date Filter</button>
+          ` : ''}
         </div>
       `;
       renderPagination(0, 0, 1);
@@ -401,12 +494,41 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </aside>
       `;
+    } else if (state.selectedCategory === "fintech-backend" && state.page === 1 && !state.searchQuery.trim() && state.difficultyFilter === "all" && state.statusFilter === "all") {
+      executiveBannerHtml = `
+        <aside class="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-secondary-container/25 via-surface-container-high/40 to-primary-container/20 border border-secondary/40 shadow-lg relative overflow-hidden">
+          <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-secondary/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-secondary/20 border border-secondary/30 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">💳</div>
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-md bg-secondary text-on-secondary font-label-sm text-[11px] font-bold uppercase tracking-wider">Payments &amp; Backend Lead</span>
+                  <span class="px-2 py-0.5 rounded-md bg-surface-container-highest text-on-surface-variant font-label-sm text-[11px]">27 Questions &bull; Payoneer &amp; Cross-Border Rails</span>
+                </div>
+                <h2 class="font-headline-sm text-base sm:text-lg text-on-surface font-bold mt-1.5">FinTech &amp; Backend Engineering Leadership Hub</h2>
+                <p class="font-body-sm text-xs sm:text-body-sm text-on-surface-variant mt-1 max-w-3xl leading-relaxed">
+                  Master the mobile-to-backend transition: <strong>Fit &amp; Motivation</strong>, <strong>STAR Leadership</strong>, <strong>Idempotency &amp; Double-Entry Ledger</strong>, <strong>Kafka &amp; Outbox CDC</strong>, <strong>Database Isolation</strong>, and <strong>Payment SLIs/SLOs</strong>.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 self-start md:self-center flex-shrink-0">
+              <button onclick="document.getElementById('card-b34-01')?.scrollIntoView({ behavior: 'smooth', block: 'start' })" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-secondary to-inverse-primary text-on-secondary font-label-md text-xs sm:text-label-md font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer" type="button">
+                <span class="material-symbols-outlined text-base">account_balance_wallet</span>
+                <span>Start Hub</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+      `;
     }
 
     questionFeed.innerHTML = executiveBannerHtml + pageItems.map(q => {
       const isBookmarked = state.bookmarks.includes(q.id);
       const isMastered = state.mastered.includes(q.id);
       const diffClasses = DIFF_BADGE_CLASSES[q.difficulty] || "bg-surface-container-highest text-on-surface-variant";
+      const qDate = q.dateAdded || "2026-10-24";
+      const isNew = isQuestionNew(qDate);
 
       const bookmarkClasses = isBookmarked
         ? "bg-tertiary-container/20 text-tertiary"
@@ -422,6 +544,16 @@ document.addEventListener("DOMContentLoaded", () => {
               <span class="px-2.5 py-1 rounded-md bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold uppercase">${q.categoryName}</span>
               <span class="px-2.5 py-1 rounded-md ${diffClasses} font-label-sm text-label-sm font-semibold uppercase">${q.difficulty}</span>
               <span class="px-2.5 py-1 rounded-md bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm uppercase">${q.topic}</span>
+              <span class="px-2 py-0.5 rounded-md bg-surface-container-low text-on-surface-variant font-label-sm text-[11px] flex items-center gap-1 border border-surface-container-high/40" title="Added on ${qDate}">
+                <span class="material-symbols-outlined text-[12px] text-secondary">event</span>
+                <span>${formatCardDate(qDate)}</span>
+              </span>
+              ${isNew ? `
+                <span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 font-label-sm text-[10px] font-bold tracking-wider flex items-center gap-1 animate-pulse" title="Newly added question">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  <span>NEW</span>
+                </span>
+              ` : ''}
             </div>
             <div class="flex items-center gap-2 self-end sm:self-auto">
               <button aria-label="Bookmark this inquiry" class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${bookmarkClasses}" data-action="bookmark" data-id="${q.id}" type="button">
@@ -496,10 +628,35 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const randomBadge = state.order === "random"
+    let filterContext = "";
+    if (state.dateFilter !== "all") {
+      let dateLabel = "Date";
+      if (state.dateFilter === "today") {
+        dateLabel = "Today";
+      } else if (state.dateFilter === "7d") {
+        dateLabel = "Past 7d";
+      } else if (state.dateFilter === "30d") {
+        dateLabel = "Past 30d";
+      } else if (state.dateFilter === "range") {
+        if (state.dateFrom && state.dateTo) {
+          dateLabel = `${formatCardDate(state.dateFrom)} - ${formatCardDate(state.dateTo)}`;
+        } else if (state.dateFrom) {
+          dateLabel = `From ${formatCardDate(state.dateFrom)}`;
+        } else if (state.dateTo) {
+          dateLabel = `Up to ${formatCardDate(state.dateTo)}`;
+        } else {
+          dateLabel = "Custom Range";
+        }
+      } else {
+        dateLabel = formatCardDate(state.dateFilter);
+      }
+      filterContext = ` <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-secondary/15 text-secondary font-mono"><span class="material-symbols-outlined text-[11px]">calendar_month</span> ${dateLabel}</span>`;
+    }
+
+    const orderBadge = state.order === "random"
       ? ` <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary/15 text-tertiary font-mono"><span class="material-symbols-outlined text-[11px]">shuffle</span> Shuffled</span>`
-      : "";
-    const summaryText = `Showing <strong class="text-on-surface">${shownFrom}-${shownTo}</strong> of ${total} questions${randomBadge}`;
+      : (state.order === "newest" ? ` <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/15 text-primary font-mono"><span class="material-symbols-outlined text-[11px]">schedule</span> Newest</span>` : "");
+    const summaryText = `Showing <strong class="text-on-surface">${shownFrom}-${shownTo}</strong> of ${total} questions${filterContext}${orderBadge}`;
     paginationSummary.innerHTML = summaryText;
     if (paginationSummaryTop) paginationSummaryTop.innerHTML = summaryText;
 
@@ -574,6 +731,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function clearDateFilter(skipRender = false) {
+    state.dateFilter = "all";
+    state.dateFrom = null;
+    state.dateTo = null;
+    const dateRangeFromInput = document.getElementById("date-range-from");
+    const dateRangeToInput = document.getElementById("date-range-to");
+    const customRangeLabel = document.getElementById("custom-range-label");
+    const customRangeBtn = document.getElementById("custom-range-btn");
+    const dateClearBtn = document.getElementById("date-clear-btn");
+
+    if (dateRangeFromInput) dateRangeFromInput.value = "";
+    if (dateRangeToInput) dateRangeToInput.value = "";
+    if (customRangeLabel) customRangeLabel.textContent = "Custom Range";
+    if (customRangeBtn) setPillActive(customRangeBtn, false);
+    if (dateClearBtn) {
+      dateClearBtn.classList.add("hidden");
+      dateClearBtn.classList.remove("inline-flex");
+    }
+    document.querySelectorAll(".date-filter").forEach(c => {
+      setPillActive(c, c.dataset.date === "all");
+    });
+    if (!skipRender) {
+      state.page = 1;
+      renderQuestions();
+      exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   function attachQuestionActionListeners() {
     questionFeed.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", (e) => {
@@ -626,6 +811,8 @@ document.addEventListener("DOMContentLoaded", () => {
           renderQuestions();
           exploreView?.scrollTo({ top: 0, behavior: "smooth" });
           window.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (action === "reset-date-filter") {
+          clearDateFilter();
         }
       });
     });
@@ -648,6 +835,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.searchQuery = "";
       state.difficultyFilter = "all";
       state.statusFilter = "all";
+      clearDateFilter(true);
       if (searchInput) searchInput.value = "";
       if (searchInputHeader) searchInputHeader.value = "";
       resetPillActive(".diff-filter", "all");
@@ -703,7 +891,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetPillActive(selector, targetValue) {
     document.querySelectorAll(selector).forEach(btn => {
-      const isActive = (btn.dataset.diff || btn.dataset.status || btn.dataset.order) === targetValue;
+      const isActive = (btn.dataset.diff || btn.dataset.status || btn.dataset.order || btn.dataset.date) === targetValue;
       setPillActive(btn, isActive);
     });
   }
@@ -1068,6 +1256,137 @@ document.addEventListener("DOMContentLoaded", () => {
         exploreView?.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
+
+    // Date Filter Pills (All, Today, 7d, 30d, or Custom Date Range)
+    const customRangeBtn = document.getElementById("custom-range-btn");
+    const customRangeLabel = document.getElementById("custom-range-label");
+    const dateClearBtn = document.getElementById("date-clear-btn");
+    const dateRangeModal = document.getElementById("date-range-modal");
+    const dateRangeModalPanel = document.getElementById("date-range-modal-panel");
+    const dateRangeModalCloseBtn = document.getElementById("date-range-modal-close-btn");
+    const dateRangeModalBackdrop = document.getElementById("date-range-modal-backdrop");
+    const dateRangeModalCancelBtn = document.getElementById("date-range-modal-cancel-btn");
+    const dateRangeModalApplyBtn = document.getElementById("date-range-modal-apply-btn");
+    const dateRangeModalResetBtn = document.getElementById("date-range-modal-reset-btn");
+    const dateRangeFromInput = document.getElementById("date-range-from");
+    const dateRangeToInput = document.getElementById("date-range-to");
+    const quickRangeBtns = document.querySelectorAll(".quick-range-btn");
+
+    function openDateRangeModal() {
+      if (!dateRangeModal) return;
+      if (dateRangeFromInput) dateRangeFromInput.value = state.dateFrom || "";
+      if (dateRangeToInput) dateRangeToInput.value = state.dateTo || "";
+      dateRangeModal.classList.remove("opacity-0", "pointer-events-none");
+      dateRangeModal.setAttribute("aria-hidden", "false");
+      dateRangeModalPanel?.classList.remove("scale-95");
+      dateRangeModalPanel?.classList.add("scale-100");
+    }
+
+    function closeDateRangeModal() {
+      if (!dateRangeModal) return;
+      dateRangeModal.classList.add("opacity-0", "pointer-events-none");
+      dateRangeModal.setAttribute("aria-hidden", "true");
+      dateRangeModalPanel?.classList.remove("scale-100");
+      dateRangeModalPanel?.classList.add("scale-95");
+    }
+
+    document.querySelectorAll(".date-filter").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".date-filter").forEach(c => setPillActive(c, false));
+        setPillActive(chip, true);
+        if (customRangeBtn) setPillActive(customRangeBtn, false);
+        state.dateFilter = chip.dataset.date;
+        state.dateFrom = null;
+        state.dateTo = null;
+        if (customRangeLabel) customRangeLabel.textContent = "Custom Range";
+        if (dateClearBtn) {
+          dateClearBtn.classList.add("hidden");
+          dateClearBtn.classList.remove("inline-flex");
+        }
+        state.page = 1;
+        renderQuestions();
+        exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+
+    customRangeBtn?.addEventListener("click", openDateRangeModal);
+    dateRangeModalCloseBtn?.addEventListener("click", closeDateRangeModal);
+    dateRangeModalBackdrop?.addEventListener("click", closeDateRangeModal);
+    dateRangeModalCancelBtn?.addEventListener("click", closeDateRangeModal);
+
+    quickRangeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const preset = btn.dataset.preset;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayDate = new Date();
+        if (preset === "today") {
+          if (dateRangeFromInput) dateRangeFromInput.value = todayStr;
+          if (dateRangeToInput) dateRangeToInput.value = todayStr;
+        } else if (preset === "7d") {
+          const from = new Date(todayDate.getTime() - 7 * 86400000).toISOString().slice(0, 10);
+          if (dateRangeFromInput) dateRangeFromInput.value = from;
+          if (dateRangeToInput) dateRangeToInput.value = todayStr;
+        } else if (preset === "14d") {
+          const from = new Date(todayDate.getTime() - 14 * 86400000).toISOString().slice(0, 10);
+          if (dateRangeFromInput) dateRangeFromInput.value = from;
+          if (dateRangeToInput) dateRangeToInput.value = todayStr;
+        } else if (preset === "30d") {
+          const from = new Date(todayDate.getTime() - 30 * 86400000).toISOString().slice(0, 10);
+          if (dateRangeFromInput) dateRangeFromInput.value = from;
+          if (dateRangeToInput) dateRangeToInput.value = todayStr;
+        } else if (preset === "month") {
+          const y = todayDate.getFullYear();
+          const m = String(todayDate.getMonth() + 1).padStart(2, "0");
+          if (dateRangeFromInput) dateRangeFromInput.value = `${y}-${m}-01`;
+          if (dateRangeToInput) dateRangeToInput.value = todayStr;
+        }
+      });
+    });
+
+    dateRangeModalResetBtn?.addEventListener("click", () => {
+      if (dateRangeFromInput) dateRangeFromInput.value = "";
+      if (dateRangeToInput) dateRangeToInput.value = "";
+    });
+
+    dateRangeModalApplyBtn?.addEventListener("click", () => {
+      let fromVal = dateRangeFromInput?.value.trim();
+      let toVal = dateRangeToInput?.value.trim();
+      if (!fromVal && !toVal) {
+        clearDateFilter();
+        closeDateRangeModal();
+        return;
+      }
+      if (fromVal && toVal && fromVal > toVal) {
+        [fromVal, toVal] = [toVal, fromVal];
+      }
+      state.dateFilter = "range";
+      state.dateFrom = fromVal || null;
+      state.dateTo = toVal || null;
+
+      document.querySelectorAll(".date-filter").forEach(c => setPillActive(c, false));
+      if (customRangeBtn) setPillActive(customRangeBtn, true);
+
+      let labelText = "Custom Range";
+      if (fromVal && toVal) {
+        labelText = `${formatCardDate(fromVal)} - ${formatCardDate(toVal)}`;
+      } else if (fromVal) {
+        labelText = `From ${formatCardDate(fromVal)}`;
+      } else if (toVal) {
+        labelText = `Up to ${formatCardDate(toVal)}`;
+      }
+      if (customRangeLabel) customRangeLabel.textContent = labelText;
+      if (dateClearBtn) {
+        dateClearBtn.classList.remove("hidden");
+        dateClearBtn.classList.add("inline-flex");
+      }
+
+      state.page = 1;
+      renderQuestions();
+      exploreView?.scrollTo({ top: 0, behavior: "smooth" });
+      closeDateRangeModal();
+    });
+
+    dateClearBtn?.addEventListener("click", () => clearDateFilter());
 
     // Order Filter Pills (Curated vs Random)
     function updateOrderControls() {
