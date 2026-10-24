@@ -168,7 +168,7 @@
       <div class="p-3.5 rounded-xl bg-surface-container-low/90 backdrop-blur-md shadow-sm border border-surface-container-high/40">
         <div class="flex items-center justify-between gap-2">
           <span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">Interview Tracks</span>
-          <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-primary-container/20 text-primary font-semibold" id="track-count-badge">16 Tracks</span>
+          <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-primary-container/20 text-primary font-semibold" id="track-count-badge">17 Tracks</span>
         </div>
         <h2 class="font-headline-sm text-sm font-semibold text-on-surface tracking-tight mt-1">Select Role or Domain</h2>
         <p class="font-body-sm text-xs text-on-surface-variant mt-0.5">Engineering domains &amp; leadership roles.</p>
@@ -279,10 +279,39 @@
                 <button class="status-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs flex items-center gap-0.5 transition-colors" data-status="mastered" type="button"><span class="text-secondary">✓</span> Mastered</button>
               </div>
             </div>
+            <!-- Date Filter: check new questions based on date -->
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <span class="font-label-sm text-[10px] sm:text-label-sm text-on-surface-variant uppercase flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[12px] text-secondary">calendar_month</span>
+                <span>Date:</span>
+              </span>
+              <div class="inline-flex p-0.5 rounded-lg bg-surface-container-lowest/80 text-xs" id="date-pills">
+                <button class="date-filter px-2 py-0.5 rounded-md bg-gradient-to-r from-primary to-inverse-primary text-on-primary font-label-sm text-xs font-semibold shadow-sm active" data-date="all" type="button" title="All time">All</button>
+                <button class="date-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors flex items-center gap-0.5" data-date="today" type="button" title="Added today">
+                  <span>Today</span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary inline-block animate-pulse"></span>
+                </button>
+                <button class="date-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" data-date="7d" type="button" title="Added past 7 days">7d</button>
+                <button class="date-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs transition-colors" data-date="30d" type="button" title="Added past 30 days">30d</button>
+              </div>
+              <div class="relative flex items-center gap-0.5">
+                <button id="custom-range-btn" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface-container-lowest/90 hover:bg-surface-container-high text-on-surface-variant hover:text-secondary text-xs transition-colors border border-surface-container-high/60" type="button" title="Filter by custom date range (From - To)">
+                  <span class="material-symbols-outlined text-[13px] text-secondary">date_range</span>
+                  <span id="custom-range-label" class="font-label-sm text-[10.5px]">Custom Range</span>
+                </button>
+                <button id="date-clear-btn" class="hidden items-center justify-center w-5 h-5 rounded-md text-on-surface-variant hover:text-error hover:bg-surface-container-high text-xs transition-colors" type="button" title="Clear custom date filter">
+                  <span class="material-symbols-outlined text-xs">close</span>
+                </button>
+              </div>
+            </div>
             <div class="flex items-center gap-1 flex-shrink-0">
               <span class="font-label-sm text-[10px] sm:text-label-sm text-on-surface-variant uppercase">Order:</span>
               <div class="inline-flex p-0.5 rounded-lg bg-surface-container-lowest/80 text-xs" id="order-pills">
                 <button class="order-filter px-2 py-0.5 rounded-md bg-gradient-to-r from-primary to-inverse-primary text-on-primary font-label-sm text-xs font-semibold shadow-sm active" data-order="default" type="button" title="Curated sequential order">Curated</button>
+                <button class="order-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs flex items-center gap-1 transition-colors" data-order="newest" type="button" title="Sort by newest added first">
+                  <span class="material-symbols-outlined text-[13px]">schedule</span>
+                  <span>Newest</span>
+                </button>
                 <button class="order-filter px-2 py-0.5 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-xs flex items-center gap-1 transition-colors" data-order="random" type="button" title="Randomize questions order">
                   <span class="material-symbols-outlined text-[13px]">shuffle</span>
                   <span>Random</span>
@@ -364,6 +393,55 @@
     </div>
   </div>
 
+  <!-- Custom Date Range Dialog Modal -->
+  <div id="date-range-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" aria-hidden="true">
+    <div id="date-range-modal-backdrop" class="absolute inset-0 cursor-pointer"></div>
+    <div class="relative w-full max-w-sm rounded-2xl bg-surface-container-low border border-surface-container-high/70 shadow-2xl p-5 flex flex-col gap-4 transform scale-95 transition-all duration-200" id="date-range-modal-panel">
+      <div class="flex items-center justify-between border-b border-surface-container-high/50 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-secondary/15 flex items-center justify-center text-secondary">
+            <span class="material-symbols-outlined text-base">date_range</span>
+          </div>
+          <div>
+            <h3 class="font-headline-sm text-sm font-semibold text-on-surface">Filter by Date Range</h3>
+            <p class="font-body-sm text-[11px] text-on-surface-variant">Find questions added between two dates</p>
+          </div>
+        </div>
+        <button id="date-range-modal-close-btn" class="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button" aria-label="Close dialog">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label for="date-range-from" class="font-label-sm text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">From Date</label>
+          <input type="date" id="date-range-from" class="w-full bg-surface-container-lowest text-on-surface text-xs rounded-lg px-2.5 py-1.5 border border-surface-container-high focus:outline-none focus:border-secondary">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label for="date-range-to" class="font-label-sm text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">To Date</label>
+          <input type="date" id="date-range-to" class="w-full bg-surface-container-lowest text-on-surface text-xs rounded-lg px-2.5 py-1.5 border border-surface-container-high focus:outline-none focus:border-secondary">
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <span class="font-label-sm text-[10.5px] text-on-surface-variant mr-1">Presets:</span>
+        <button type="button" class="quick-range-btn px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-[11px] transition-colors" data-preset="today">Today</button>
+        <button type="button" class="quick-range-btn px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-[11px] transition-colors" data-preset="7d">Last 7d</button>
+        <button type="button" class="quick-range-btn px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-[11px] transition-colors" data-preset="14d">Last 14d</button>
+        <button type="button" class="quick-range-btn px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-[11px] transition-colors" data-preset="30d">Last 30d</button>
+        <button type="button" class="quick-range-btn px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-[11px] transition-colors" data-preset="month">This Month</button>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-surface-container-high/40">
+        <button id="date-range-modal-reset-btn" type="button" class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-surface-container-high font-label-sm text-xs transition-colors">Reset</button>
+        <div class="flex items-center gap-2">
+          <button id="date-range-modal-cancel-btn" type="button" class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright font-label-sm text-xs transition-colors">Cancel</button>
+          <button id="date-range-modal-apply-btn" type="button" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-primary to-inverse-primary text-on-primary font-label-sm text-xs font-semibold shadow-sm hover:opacity-95 transition-opacity">Apply Range</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer Information (Accessible via Explore view end or subtle bar) -->
   <div id="app-footer-info" class="hidden">
     <span id="last-updated">—</span>
@@ -435,6 +513,10 @@
   <script src="js/data-batch31.js?v=1"></script>
   <!-- Mobile Architect: Architecture, Concurrency, Modularization, Jetpack Compose & Full Lifecycle (batch 32) -->
   <script src="js/data-batch32.js?v=1"></script>
-  <script src="js/app.js?v=35"></script>
+  <!-- Flutter: Senior/Lead/Architect questions from interview screenshots + core deep-dives (batch 33) -->
+  <script src="js/data-batch33.js?v=1"></script>
+  <!-- FinTech & Backend Engineering Leadership: Payoneer, Payments, Idempotency, Kafka, DBs, System Design & EM (batch 34) -->
+  <script src="js/data-batch34.js?v=1"></script>
+  <script src="js/app.js?v=36"></script>
 </body>
 </html>
